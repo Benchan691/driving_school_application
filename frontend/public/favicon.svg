@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="faviconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="url(#faviconGrad)"/>
+  
+  <!-- Simple Car Icon -->
+  <g transform="translate(6, 8)">
+    <!-- Car Body -->
+    <rect x="2" y="6" width="16" height="6" rx="1" fill="#ffffff"/>
+    
+    <!-- Car Roof -->
+    <path d="M 4 6 L 6 2 L 14 2 L 16 6 Z" fill="#ffffff"/>
+    
+    <!-- Windows -->
+    <rect x="6.5" y="3" width="3" height="2" fill="#2563eb"/>
+    <rect x="10.5" y="3" width="3" height="2" fill="#2563eb"/>
+    
+    <!-- Wheels -->
+    <circle cx="6" cy="14" r="2" fill="#333333"/>
+    <circle cx="14" cy="14" r="2" fill="#333333"/>
+  </g>
+</svg>

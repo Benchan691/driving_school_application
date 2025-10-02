@@ -1,0 +1,110 @@
+{
+  "page": {
+    "title": "Driving Lesson Packages",
+    "subtitle": "Choose the perfect package for your driving journey. Flexible options designed to fit your learning needs and schedule."
+  },
+  "packages": [
+    {
+      "id": 1,
+      "name": "1 Hour Driving Lesson",
+      "description": "One lesson, to evaluate and prepare for your road test",
+      "price": 80,
+      "originalPrice": 110,
+      "duration": "1 hour",
+      "lessons": 1,
+      "icon": "FiTruck",
+      "popular": false,
+      "features": [
+        "One lesson evaluation",
+        "Road test preparation", 
+        "Individual assessment"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "1.5 Hours Driving Lessons",
+      "description": "Perfect for intermediate or experienced drivers wanting a reminder of driving skills",
+      "price": 110,
+      "originalPrice": 150,
+      "duration": "1.5 hours",
+      "lessons": 1,
+      "icon": "FiBookOpen",
+      "popular": false,
+      "features": [
+        "Perfect for intermediate drivers",
+        "Experienced driver refresher",
+        "Reminder of driving skills"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Package A",
+      "description": "In this package you will get four 90 minutes lessons. Total hours 6 behind the wheel.",
+      "price": 420,
+      "originalPrice": 600,
+      "duration": "6 hours total",
+      "lessons": 4,
+      "icon": "FiAward",
+      "popular": true,
+      "features": [
+        "Four 90-minute lessons",
+        "Total 6 hours behind the wheel",
+        "Comprehensive training"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Package B",
+      "description": "In this package you will get six 90 minutes lessons. Total hours 9 behind the wheel.",
+      "price": 610,
+      "originalPrice": 700,
+      "duration": "9 hours total",
+      "lessons": 6,
+      "icon": "FiAward",
+      "popular": false,
+      "features": [
+        "Six 90-minute lessons",
+        "Total 9 hours behind the wheel",
+        "Extended training program"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Package C",
+      "description": "In this package you will get ten 90 minutes lessons. Total hours 15 behind the wheel.",
+      "price": 1000,
+      "originalPrice": 1200,
+      "duration": "15 hours total",
+      "lessons": 10,
+      "icon": "FiAward",
+      "popular": false,
+      "features": [
+        "Ten 90-minute lessons",
+        "Total 15 hours behind the wheel",
+        "Comprehensive training program"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Road Test",
+      "description": "In this package you will get 60 minutes refresher lesson and a school vehicle for road testing.",
+      "price": 170,
+      "originalPrice": 200,
+      "duration": "1 hour + vehicle",
+      "lessons": 1,
+      "icon": "FiTruck",
+      "popular": true,
+      "features": [
+        "60 minutes refresher lesson",
+        "School vehicle for road testing",
+        "Complete road test support"
+      ]
+    }
+  ],
+  "footer": {
+    "title": "Need Help Choosing?",
+    "text": "Our experienced instructors can help you select the perfect package based on your driving experience and goals. Contact us for personalized recommendations.",
+    "buttonText": "Contact Us"
+  }
+}
+

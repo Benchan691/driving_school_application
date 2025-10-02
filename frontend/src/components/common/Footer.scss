@@ -1,0 +1,135 @@
+@import '../../styles/variables';
+
+.footer {
+  background: $bg-dark;
+  color: $text-inverse;
+  padding: $spacing-16 0 $spacing-8;
+  margin-top: auto;
+
+  .footer-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-8;
+    margin-bottom: $spacing-8;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: $spacing-6;
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+      gap: $spacing-6;
+    }
+  }
+
+  .footer-section {
+    h3 {
+      color: $white;
+      margin-bottom: $spacing-4;
+      font-size: $font-size-xl;
+    }
+
+    h4 {
+      color: $white;
+      margin-bottom: $spacing-4;
+      font-size: $font-size-lg;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: $line-height-relaxed;
+      margin-bottom: $spacing-4;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+
+      li {
+        margin-bottom: $spacing-2;
+
+        a {
+          color: rgba(255, 255, 255, 0.8);
+          text-decoration: none;
+          transition: color $transition-base;
+
+          &:hover {
+            color: $primary-light;
+          }
+        }
+      }
+    }
+
+    .social-links {
+      display: flex;
+      gap: $spacing-3;
+
+      .social-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        color: $white;
+        border-radius: $border-radius-full;
+        transition: all $transition-base;
+
+        &:hover {
+          background: $primary-color;
+          transform: translateY(-2px);
+        }
+      }
+    }
+
+    .contact-info {
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: $spacing-3;
+        margin-bottom: $spacing-3;
+        color: rgba(255, 255, 255, 0.8);
+
+        svg {
+          color: $primary-light;
+          flex-shrink: 0;
+        }
+      }
+    }
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: $spacing-6;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    @media (max-width: $breakpoint-md) {
+      flex-direction: column;
+      gap: $spacing-4;
+      text-align: center;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.6);
+      margin: 0;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: $spacing-4;
+
+      a {
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        transition: color $transition-base;
+
+        &:hover {
+          color: $primary-light;
+        }
+      }
+    }
+  }
+}

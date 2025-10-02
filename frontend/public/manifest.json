@@ -1,0 +1,24 @@
+{
+  "short_name": "Driving School",
+  "name": "Professional Driving School",
+  "description": "Learn to drive with professional instructors. Book lessons online and track your progress.",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["education", "lifestyle", "transportation"],
+  "lang": "en"
+}

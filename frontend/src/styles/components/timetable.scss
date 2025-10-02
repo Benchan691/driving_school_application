@@ -1,0 +1,335 @@
+@import '../variables';
+
+.today-timetable {
+  background: $white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+
+  .timetable-header {
+    background: linear-gradient(135deg, $primary-color, $primary-dark);
+    color: $white;
+    padding: $spacing-6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-4;
+
+    h3 {
+      margin: 0;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-semibold;
+      display: flex;
+      align-items: center;
+      gap: $spacing-3;
+
+      svg {
+        font-size: $font-size-lg;
+      }
+    }
+
+    .timetable-stats {
+      display: flex;
+      gap: $spacing-4;
+      flex-wrap: wrap;
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        background: rgba(255, 255, 255, 0.2);
+        padding: $spacing-2 $spacing-3;
+        border-radius: $border-radius-md;
+        backdrop-filter: blur(10px);
+
+        svg {
+          font-size: $font-size-base;
+        }
+
+        &.scheduled {
+          background: rgba(59, 130, 246, 0.3);
+        }
+
+
+        &.cancelled {
+          background: rgba(239, 68, 68, 0.3);
+        }
+      }
+    }
+  }
+
+  .timetable-grid {
+    .timetable-columns {
+      display: grid;
+      grid-template-columns: 100px 1fr 120px 80px 120px 140px;
+      gap: $spacing-4;
+      padding: $spacing-4;
+      background: $bg-secondary;
+      border-bottom: 1px solid $border-color;
+      font-weight: $font-weight-semibold;
+      font-size: $font-size-sm;
+      color: $text-secondary;
+
+      .column-header {
+        text-align: center;
+      }
+    }
+
+    .timetable-slots {
+      max-height: 600px;
+      overflow-y: auto;
+
+      .timetable-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 120px 80px 120px 140px;
+        gap: $spacing-4;
+        padding: $spacing-4;
+        border-bottom: 1px solid $border-light;
+        transition: all $transition-base;
+        align-items: center;
+
+        &:hover {
+          background: $bg-secondary;
+        }
+
+        &.current {
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
+          border-left: 4px solid $primary-color;
+        }
+
+        &.past {
+          opacity: 0.7;
+          background: $bg-tertiary;
+        }
+
+        .time-slot {
+          text-align: center;
+          position: relative;
+
+          .time {
+            font-weight: $font-weight-semibold;
+            color: $text-primary;
+            font-size: $font-size-base;
+          }
+
+          .current-indicator {
+            display: flex;
+            align-items: center;
+            gap: $spacing-1;
+            font-size: $font-size-xs;
+            color: $primary-color;
+            font-weight: $font-weight-medium;
+            margin-top: $spacing-1;
+
+            svg {
+              animation: pulse 2s infinite;
+            }
+          }
+        }
+
+        .student-info {
+          .student-name {
+            font-weight: $font-weight-medium;
+            color: $text-primary;
+          }
+
+          .booking-notes {
+            font-size: $font-size-xs;
+            color: $text-secondary;
+            margin-top: $spacing-1;
+            padding: $spacing-1 $spacing-2;
+            background: $bg-tertiary;
+            border-radius: $border-radius-sm;
+            cursor: help;
+          }
+
+          .available {
+            color: $text-tertiary;
+            font-style: italic;
+          }
+        }
+
+        .instructor-info {
+          text-align: center;
+          font-weight: $font-weight-medium;
+          color: $text-secondary;
+        }
+
+        .duration-info {
+          text-align: center;
+          color: $text-secondary;
+          font-size: $font-size-sm;
+        }
+
+        .status-info {
+          text-align: center;
+
+          .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: $spacing-1;
+            padding: $spacing-1 $spacing-3;
+            border-radius: $border-radius-full;
+            color: $white;
+            font-size: $font-size-xs;
+            font-weight: $font-weight-medium;
+
+            .status-icon {
+              font-size: $font-size-sm;
+            }
+          }
+
+          .available {
+            color: $text-tertiary;
+            font-style: italic;
+          }
+        }
+
+        .actions {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: $spacing-2;
+
+          .action-buttons {
+            display: flex;
+            gap: $spacing-2;
+            align-items: center;
+
+            .btn {
+              padding: $spacing-1 $spacing-2;
+              font-size: $font-size-xs;
+              border-radius: $border-radius-sm;
+              min-width: 32px;
+              height: 32px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+              &.btn-sm {
+                padding: $spacing-1 $spacing-2;
+              }
+
+              &.btn-success {
+                background: $success-color;
+                color: $white;
+                border: 1px solid $success-color;
+
+                &:hover {
+                  background: darken($success-color, 10%);
+                }
+              }
+
+              &.btn-danger {
+                background: $error-color;
+                color: $white;
+                border: 1px solid $error-color;
+
+                &:hover {
+                  background: darken($error-color, 10%);
+                }
+              }
+            }
+
+            .verification-badge {
+              font-size: $font-size-xs;
+              padding: $spacing-1 $spacing-2;
+              border-radius: $border-radius-sm;
+              font-weight: $font-weight-medium;
+
+              &.unverified {
+                background: $warning-light;
+                color: $warning-dark;
+                border: 1px solid $warning-color;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .no-bookings {
+    padding: $spacing-16;
+    text-align: center;
+    color: $text-tertiary;
+
+    svg {
+      font-size: $font-size-4xl;
+      margin-bottom: $spacing-4;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+      font-size: $font-size-lg;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Responsive design
+@media (max-width: $breakpoint-lg) {
+  .today-timetable {
+    .timetable-grid {
+      .timetable-columns,
+      .timetable-slots .timetable-row {
+        grid-template-columns: 80px 1fr 100px 60px 100px 120px;
+        gap: $spacing-3;
+      }
+    }
+
+    .timetable-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-3;
+
+      .timetable-stats {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .today-timetable {
+    .timetable-grid {
+      .timetable-columns,
+      .timetable-slots .timetable-row {
+        grid-template-columns: 70px 1fr 80px 50px 80px 100px;
+        gap: $spacing-2;
+        padding: $spacing-3;
+      }
+    }
+
+    .timetable-header {
+      padding: $spacing-4;
+
+      h3 {
+        font-size: $font-size-lg;
+      }
+
+      .timetable-stats {
+        flex-direction: column;
+        gap: $spacing-2;
+
+        .stat-item {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+  }
+}

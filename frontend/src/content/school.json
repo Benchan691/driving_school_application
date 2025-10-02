@@ -1,0 +1,164 @@
+{
+  "school": {
+    "name": "The Truth Driving School",
+    "tagline": "Professional driving lessons with certified instructors. Learn to drive safely and confidently.",
+    "description": "We've been helping students become confident, safe drivers for over a decade. Our experienced instructors and proven teaching methods have helped thousands of students pass their driving tests and become responsible drivers."
+  },
+  "contact": {
+    "email": "thetruthdrivingschool@gmail.com",
+    "phone": "+1 (604) 773 8906",
+    "phoneFormatted": "(604) 773 8906",
+    "phoneLink": "tel:+16047738906",
+    "address": {
+      "street": "123 Driving Street",
+      "city": "City",
+      "state": "State",
+      "zipCode": "12345",
+      "full": "123 Driving Street, City, State 12345"
+    }
+  },
+  "businessHours": {
+    "_comment": "Time slots are automatically generated based on start/end times and interval. You can also manually define slots below.",
+    "weekdays": {
+      "days": "Mon-Sat",
+      "hours": "8:00 AM - 8:00 PM",
+      "start": "08:00",
+      "end": "20:00"
+    },
+    "weekend": {
+      "days": "Sun",
+      "hours": "1:00 PM - 8:00 PM",
+      "start": "13:00",
+      "end": "20:00"
+    },
+    "formatted": "Mon-Sat: 8:00 AM - 8:00 PM<br />Sun: 1:00 PM - 8:00 PM",
+    "emergency": "For urgent inquiries, please call us directly during business hours.",
+    "timeSlotInterval": 30,
+    "defaultWeekdaySlots": [
+      "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+      "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+      "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
+    ],
+    "defaultWeekendSlots": [
+      "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+      "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
+    ]
+  },
+  "socialMedia": {
+    "facebook": {
+      "url": "https://www.facebook.com/p/The-Truth-Driving-School-100051532706244/",
+      "icon": "FiFacebook"
+    },
+    "instagram": {
+      "url": "https://www.instagram.com/thetruthdrivingschool/",
+      "icon": "FiInstagram"
+    }
+  },
+  "stats": {
+    "studentsTaught": "500+",
+    "passRate": "95%",
+    "yearsExperience": "10+",
+    "serviceAreas": "50+"
+  },
+  "team": [
+    {
+      "name": "John Smith",
+      "role": "Lead Instructor & Founder",
+      "experience": "15 years",
+      "specialties": ["Defensive Driving", "Highway Training", "Test Preparation"],
+      "avatar": "👨‍🏫"
+    },
+    {
+      "name": "Sarah Johnson",
+      "role": "Senior Instructor",
+      "experience": "12 years",
+      "specialties": ["Beginner Lessons", "Parallel Parking", "City Driving"],
+      "avatar": "👩‍🏫"
+    },
+    {
+      "name": "Mike Rodriguez",
+      "role": "Advanced Instructor",
+      "experience": "8 years",
+      "specialties": ["Commercial License", "Motorcycle Training", "Refresher Courses"],
+      "avatar": "👨‍💼"
+    }
+  ],
+  "values": [
+    {
+      "title": "Safety First",
+      "description": "We prioritize safety above all else, ensuring every student learns to drive responsibly and confidently.",
+      "icon": "FiCheckCircle"
+    },
+    {
+      "title": "Personalized Learning",
+      "description": "Every student is unique, so we tailor our teaching methods to match individual learning styles and needs.",
+      "icon": "FiCheckCircle"
+    },
+    {
+      "title": "Modern Techniques",
+      "description": "We use the latest teaching methods and technology to provide the most effective driving education.",
+      "icon": "FiCheckCircle"
+    },
+    {
+      "title": "Proven Results",
+      "description": "Our high pass rates and student success stories speak to the quality of our instruction.",
+      "icon": "FiCheckCircle"
+    }
+  ],
+  "services": [
+    {
+      "name": "Beginner Lessons",
+      "id": "beginner",
+      "description": "Perfect for first-time drivers"
+    },
+    {
+      "name": "Advanced Training",
+      "id": "advanced",
+      "description": "For experienced drivers looking to improve"
+    },
+    {
+      "name": "Test Preparation",
+      "id": "test-prep",
+      "description": "Comprehensive preparation for driving tests"
+    },
+    {
+      "name": "Refresher Courses",
+      "id": "refresher",
+      "description": "Brush up on your driving skills"
+    }
+  ],
+  "contactForm": {
+    "subjects": [
+      {
+        "value": "general",
+        "label": "General Inquiry"
+      },
+      {
+        "value": "booking",
+        "label": "Lesson Booking"
+      },
+      {
+        "value": "packages",
+        "label": "Package Information"
+      },
+      {
+        "value": "support",
+        "label": "Technical Support"
+      },
+      {
+        "value": "feedback",
+        "label": "Feedback"
+      },
+      {
+        "value": "other",
+        "label": "Other"
+      }
+    ],
+    "maxMessageLength": 500,
+    "responseTime": "24 hours"
+  },
+  "copyright": {
+    "year": "2024",
+    "text": "The Truth Driving School. All rights reserved."
+  }
+}
