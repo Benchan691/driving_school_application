@@ -570,17 +570,12 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 5. Check API endpoints with curl or Postman
 
 ### Contact
-- **Issues**: Create a GitHub issue for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions
-- **Email**: Contact the development team
+- **Email**: chankokpan0728@gmail.com
 
 ## 🎉 Acknowledgments
 
 - **Stripe** for payment processing
-- **Google** for OAuth authentication
-- **Twilio** for SMS services
 - **React** and **Node.js** communities
-- **All contributors** who helped build this project
 
 ---
 
