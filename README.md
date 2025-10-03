@@ -281,17 +281,6 @@ DB_NAME=driving_school
 DB_USER=root
 DB_PASSWORD=your_password
 
-# JWT Configuration
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_REFRESH_SECRET=your_super_secret_refresh_key_here
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Google OAuth Configuration
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:5001/api/auth/google/callback
-
 # Email Configuration (Gmail SMTP)
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_16_character_app_password
@@ -300,11 +289,6 @@ EMAIL_FROM=noreply@drivingschool.com
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
-
-# Twilio Configuration (Optional)
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_PHONE_NUMBER=your_twilio_phone_number
 ```
 
 #### Frontend (.env)
