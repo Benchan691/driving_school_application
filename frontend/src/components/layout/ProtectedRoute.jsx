@@ -21,9 +21,9 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   if (requiredRole && user?.user_type !== requiredRole) {
     // Redirect to appropriate page based on user role
     if (user?.user_type === 'student') {
-      return <Navigate to="/dashboard/student" replace />;
+      return <Navigate to="/dashboard" replace />;
     } else if (user?.user_type === 'instructor') {
-      return <Navigate to="/dashboard/instructor" replace />;
+      return <Navigate to="/dashboard" replace />;
     } else if (user?.user_type === 'admin') {
       return <Navigate to="/dashboard/admin" replace />;
     } else {

@@ -8,6 +8,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import Home from './components/pages/Home';
+import AboutUs from './components/pages/AboutUs';
 import Packages from './components/pages/Packages';
 import Contact from './components/pages/Contact';
 import Login from './components/auth/Login';
@@ -34,8 +35,8 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
+              <Route path="/about" element={<AboutUs />} />
               <Route path="/packages" element={<Packages />} />
-              
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />

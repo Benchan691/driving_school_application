@@ -85,3 +85,6 @@ ssl/
 *.db
 *.sqlite
 *.sqlite3
+
+# Products data
+products.csv
