@@ -18,6 +18,10 @@ const Header = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <header className="header">
       <div className="container">
@@ -31,9 +35,9 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="nav-desktop">
             <Link to="/" className="nav-link">Home</Link>
-            <Link to="/packages" className="nav-link">Packages</Link>
+            <Link to="/packages" className="nav-link" onClick={scrollToTop}>Packages</Link>
           
-            <Link to="/contact" className="nav-link">Contact</Link>
+            <Link to="/contact" className="nav-link" onClick={scrollToTop}>Contact</Link>
             {isAuthenticated && (
               user?.user_type === 'admin' ? (
                 <Link to="/dashboard/admin" className="nav-link">Admin</Link>
@@ -75,9 +79,9 @@ const Header = () => {
         {isMenuOpen && (
           <nav className="nav-mobile">
             <Link to="/" className="nav-link" onClick={toggleMenu}>Home</Link>
-            <Link to="/packages" className="nav-link" onClick={toggleMenu}>Packages</Link>
+            <Link to="/packages" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>Packages</Link>
             
-            <Link to="/contact" className="nav-link" onClick={toggleMenu}>Contact</Link>
+            <Link to="/contact" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>Contact</Link>
             
             {isAuthenticated ? (
               <div className="mobile-auth">

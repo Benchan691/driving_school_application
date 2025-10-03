@@ -8,6 +8,10 @@ import homeContent from '../../content/home.json';
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
   const dashboardPath = user?.user_type === 'admin' ? '/dashboard/admin' : '/dashboard';
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   
   // Slideshow state
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -91,7 +95,7 @@ const Home = () => {
                 <Link to={isAuthenticated ? dashboardPath : '/register'} className="btn btn-primary btn-lg">
                   {homeContent.hero.primaryCtaText}
                 </Link>
-                <Link to="/packages" className="btn btn-outline btn-lg">
+                <Link to="/packages" className="btn btn-outline btn-lg" onClick={scrollToTop}>
                   {homeContent.hero.secondaryCtaText}
                 </Link>
               </div>

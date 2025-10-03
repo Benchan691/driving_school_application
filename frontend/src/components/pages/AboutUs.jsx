@@ -11,6 +11,10 @@ const AboutUs = () => {
   const values = getSchoolValues();
   const contactInfo = getContactInfo();
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const stats = [
     { icon: FiUsers, value: schoolStats.studentsTaught, label: 'Students Taught' },
     { icon: FiAward, value: schoolStats.passRate, label: 'Pass Rate' },
@@ -34,10 +38,10 @@ const AboutUs = () => {
               {schoolInfo.description}
             </p>
             <div className="hero-buttons">
-              <Link to="/packages" className="btn btn-primary btn-lg">
+              <Link to="/packages" className="btn btn-primary btn-lg" onClick={scrollToTop}>
                 View Our Packages
               </Link>
-              <Link to="/contact" className="btn btn-outline btn-lg">
+              <Link to="/contact" className="btn btn-outline btn-lg" onClick={scrollToTop}>
                 Contact Us
               </Link>
             </div>
@@ -179,7 +183,6 @@ const AboutUs = () => {
 
           <div className="values-grid">
             {values.map((value, index) => {
-              const Icon = value.icon;
               return (
                 <motion.div
                   key={index}
@@ -190,7 +193,7 @@ const AboutUs = () => {
                   viewport={{ once: true }}
                 >
                   <div className="value-icon">
-                    <Icon />
+                    <FiCheckCircle />
                   </div>
                   <h3>{value.title}</h3>
                   <p>{value.description}</p>
@@ -214,10 +217,10 @@ const AboutUs = () => {
             <h2>Ready to Start Your Driving Journey?</h2>
             <p>Join hundreds of successful students who chose our driving school for their driving education.</p>
             <div className="cta-buttons">
-              <Link to="/packages" className="btn btn-primary btn-lg">
+              <Link to="/packages" className="btn btn-primary btn-lg" onClick={scrollToTop}>
                 View Packages
               </Link>
-              <Link to="/contact" className="btn btn-outline btn-lg">
+              <Link to="/contact" className="btn btn-outline btn-lg" onClick={scrollToTop}>
                 Get in Touch
               </Link>
             </div>

@@ -4,6 +4,10 @@ import { FiTruck, FiBookOpen, FiTarget, FiAward, FiCheck, FiStar } from 'react-i
 import { Link } from 'react-router-dom';
 
 const Packages = () => {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const packages = [
     {
       id: 1,
@@ -133,7 +137,7 @@ const Packages = () => {
                   <Link to="/register" className="btn btn-primary btn-full">
                     Choose Package
                   </Link>
-                  <Link to="/contact" className="btn btn-outline btn-full">
+                  <Link to="/contact" className="btn btn-outline btn-full" onClick={scrollToTop}>
                     Ask Questions
                   </Link>
                 </div>
@@ -151,7 +155,7 @@ const Packages = () => {
         >
           <h3>Need a Custom Package?</h3>
           <p>We understand every learner is different. Contact us to discuss a personalized package that fits your specific needs and schedule.</p>
-          <Link to="/contact" className="btn btn-outline">
+          <Link to="/contact" className="btn btn-outline" onClick={scrollToTop}>
             Contact Us
           </Link>
         </motion.div>

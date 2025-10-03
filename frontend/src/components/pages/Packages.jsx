@@ -11,6 +11,10 @@ const Packages = () => {
   const { user, isAuthenticated } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   
   const iconMap = { FiTruck, FiBookOpen, FiAward };
   const packages = content.packages.map(p => ({ ...p, IconComponent: iconMap[p.icon] || FiTruck }));
@@ -107,7 +111,7 @@ const Packages = () => {
                     <FiCreditCard />
                     Purchase Now - ${pkg.price}
                   </button>
-                  <Link to="/contact" className="btn btn-outline btn-full">
+                  <Link to="/contact" className="btn btn-outline btn-full" onClick={scrollToTop}>
                     Ask Questions
                   </Link>
                 </div>
@@ -125,7 +129,7 @@ const Packages = () => {
         >
                   <h3>{content.footer.title}</h3>
                   <p>{content.footer.text}</p>
-          <Link to="/contact" className="btn btn-outline">
+          <Link to="/contact" className="btn btn-outline" onClick={scrollToTop}>
             {content.footer.buttonText}
           </Link>
         </motion.div>

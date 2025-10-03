@@ -16,6 +16,10 @@ const Footer = () => {
   const socialMedia = getSocialMedia();
   const services = getServices();
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <footer className="footer">
       <div className="container">
@@ -33,9 +37,9 @@ const Footer = () => {
             <h4>Quick Links</h4>
             <ul>
               <li><Link to="/">Home</Link></li>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/packages">Packages</Link></li>
-              <li><Link to="/contact">Contact</Link></li>
+              <li><Link to="/about" onClick={scrollToTop}>About Us</Link></li>
+              <li><Link to="/packages" onClick={scrollToTop}>Packages</Link></li>
+              <li><Link to="/contact" onClick={scrollToTop}>Contact</Link></li>
             </ul>
           </div>
 
