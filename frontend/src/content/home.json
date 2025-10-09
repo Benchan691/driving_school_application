@@ -1,0 +1,107 @@
+{
+  "hero": {
+    "title": "What Does Professional Driving Training Include?",
+    "subtitle": "Learn with experienced instructors who provide comprehensive training to help you pass your driving test with confidence.",
+    "primaryCtaText": "Start Learning >",
+    "secondaryCtaText": "View Courses",
+    "highlights": [
+      "Trusted driving school",
+      "Professional training"
+    ]
+  },
+  "features": {
+    "heading": "Our Services",
+    "subheading": "Comprehensive driving education tailored to your needs",
+    "items": [
+      { 
+        "icon": "FiBookOpen", 
+        "title": "Courses", 
+        "text": "Structured driving lessons designed to build your confidence and skills progressively." 
+      },
+      { 
+        "icon": "FiMessageCircle", 
+        "title": "Testimonials", 
+        "text": "Hear from our successful students about their journey to getting their driver's license." 
+      },
+      { 
+        "icon": "FiTag", 
+        "title": "Pricing", 
+        "text": "Transparent pricing with flexible packages to suit your learning needs and budget." 
+      }
+    ]
+  },
+  "services": {
+    "heading": "What We Offer",
+    "subheading": "Everything you need to become a confident driver",
+    "cards": [
+      {
+        "icon": "FiUsers",
+        "title": "About Us",
+        "description": "Learn about our experienced instructors and proven teaching methods.",
+        "buttonText": "Learn More"
+      },
+      {
+        "icon": "FiMessageCircle",
+        "title": "Testimonials",
+        "description": "Read success stories from our students and their achievements.",
+        "buttonText": "Read Reviews"
+      },
+      {
+        "icon": "FiTag",
+        "title": "Pricing",
+        "description": "Affordable packages with flexible payment options available.",
+        "buttonText": "View Pricing"
+      }
+    ]
+  },
+  "reviews": {
+    "heading": "What Our Students Say",
+    "subheading": "Real reviews from real students who passed their driving test",
+    "items": [
+      {
+        "name": "anyxxes",
+        "rating": 5,
+        "text": "I got my N from the first time. The instructor is professional, patient, and very knowledgeable. He made learning to drive enjoyable and stress-free. The lessons were well-structured, and I felt confident behind the wheel after each session. I highly recommend this driving school to anyone looking to gain skills, confidence, and pass their driving test with ease!",
+        "date": "a month ago",
+        "avatar": "👩‍💼"
+      },
+      {
+        "name": "David",
+        "rating": 5,
+        "text": "Alex is amazing instructor. While being on lessons with Alex you gonna have a full attention to your actions , fixing your mistakes and improving your skills. Alex is super calm , professional and friendly instructor. I’m gladly and truthfully recommend everyone this driving school. As my example , I had few lessons with Alex and passed my 7N test today on first attempt!",
+        "date": "2 weeks ago",
+        "avatar": "👨‍💻"
+      },
+      {
+        "name": "Dilyara Altybayeva",
+        "rating": 5,
+        "text": "Best driving instructor!!! I already had two instructors before, one of them told me that I am such a bad driver and need to take at least 10 lessons. I got so disappointed and a friend of mine told me about Alex. We had only two lessons (introductory and mock road test) - and I passed! Alex is super honest, intelligent and informative - he even showed road test routes for level 5 (even though I was looking for 7), he said better safe than sorry and I need to know those routes too just in case. And you know what? I got the difficult one! Thanks to Alex who went beyond and showed more!!! If you ever think of a a road test in Vancouver - your only way is to call Alex!!! All my best wishes to Alex and his family! Thank you so much!!!",
+        "date": "a month ago",
+        "avatar": "👩‍🎓"
+      },
+      {
+        "name": "Anson",
+        "rating": 5,
+        "text": "I had a great experience with The Truth Driving School Alex. The instructors are patient, professional, and very knowledgeable. They gave me clear guidance and practical tips that helped me feel more confident behind the wheel. The lessons were well-structured and easy to follow, and the feedback I received was very helpful for improving my driving skills. I would definitely recommend this school to anyone who wants to learn driving in a safe and supportive environment.",
+        "date": "a month ago",
+        "avatar": "👨‍🎓"
+      },
+      {
+        "name": "Praiz Kareem",
+        "rating": 5,
+        "text": "Just got my class 5 license and I’m here to say Mr Alex is a fantastic instructor! Wow! He’s very familiar with the driving routes and everything you’ll be doing on your test day! He’s equally patient and helpful too.",
+        "date": "5 days ago",
+        "avatar": "👩‍⚕️"
+      },
+      {
+        "name": "Hải Nguyễn",
+        "rating": 5,
+        "text": "Shoutout to Alex from The Truth Driving School — I wouldn’t have gotten my Class 5 license on the first attempt without him! He’s one of the most patient and easygoing instructors I’ve ever met. We actually ended up at the wrong road test location on test day (long story!), but Alex stayed calm, and thankfully the staff let me take the test anyway. Everything worked out in the end. I highly recommend this school and especially Alex if you want a smooth and supportive learning experience.",
+        "date": "3 months ago",
+        "avatar": "👨‍🏫"
+      }
+    ]
+  }
+}
+
+
