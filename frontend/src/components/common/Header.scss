@@ -1,0 +1,218 @@
+@import '../../styles/variables';
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid $border-color;
+  z-index: $z-index-fixed;
+  transition: all $transition-base;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-4 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    text-decoration: none;
+    color: $text-primary;
+    font-weight: $font-weight-bold;
+    font-size: $font-size-xl;
+
+    .logo-icon {
+      font-size: $font-size-2xl;
+    }
+
+    .logo-text {
+      @media (max-width: $breakpoint-sm) {
+        display: none;
+      }
+    }
+  }
+
+  .nav-desktop {
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+
+    @media (max-width: $breakpoint-lg) {
+      display: none;
+    }
+
+    .nav-link {
+      color: $text-secondary;
+      text-decoration: none;
+      font-weight: $font-weight-medium;
+      transition: color $transition-base;
+      position: relative;
+
+      &:hover {
+        color: $primary-color;
+      }
+
+      &.active {
+        color: $primary-color;
+
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -$spacing-4;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 20px;
+          height: 2px;
+          background: $primary-color;
+          border-radius: 1px;
+        }
+      }
+    }
+  }
+
+  .auth-section {
+    display: flex;
+    align-items: center;
+    gap: $spacing-4;
+
+    @media (max-width: $breakpoint-lg) {
+      display: none;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: $spacing-3;
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: $spacing-3;
+
+      // user-profile styles removed; using .logout-btn style for clarity consistency
+
+      .logout-btn {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+        background: none;
+        border: none;
+        color: $text-secondary;
+        cursor: pointer;
+        padding: $spacing-2 $spacing-3;
+        border-radius: $border-radius-lg;
+        transition: all $transition-base;
+
+        &:hover {
+          background: rgba($error-color, 0.1);
+          color: $error-color;
+        }
+      }
+    }
+  }
+
+  .mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: $text-primary;
+    font-size: $font-size-xl;
+    cursor: pointer;
+    padding: $spacing-2;
+    border-radius: $border-radius-base;
+    transition: all $transition-base;
+
+    @media (max-width: $breakpoint-lg) {
+      display: block;
+    }
+
+    &:hover {
+      background: rgba($primary-color, 0.1);
+      color: $primary-color;
+    }
+  }
+
+  .nav-mobile {
+    display: none;
+    flex-direction: column;
+    gap: $spacing-2;
+    padding: $spacing-4 0;
+    border-top: 1px solid $border-color;
+
+    @media (max-width: $breakpoint-lg) {
+      display: flex;
+    }
+
+    .nav-link {
+      color: $text-secondary;
+      text-decoration: none;
+      font-weight: $font-weight-medium;
+      padding: $spacing-3;
+      border-radius: $border-radius-base;
+      transition: all $transition-base;
+
+      &:hover {
+        background: rgba($primary-color, 0.1);
+        color: $primary-color;
+      }
+    }
+
+    .mobile-auth {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-2;
+      padding-top: $spacing-4;
+      border-top: 1px solid $border-color;
+
+      .logout-btn-mobile {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+        background: none;
+        border: none;
+        color: $error-color;
+        cursor: pointer;
+        padding: $spacing-3;
+        border-radius: $border-radius-base;
+        transition: all $transition-base;
+        text-align: left;
+        font-size: inherit;
+        font-family: inherit;
+
+        &:hover {
+          background: rgba($error-color, 0.1);
+        }
+      }
+    }
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .header {
+    background: rgba(30, 30, 30, 0.95);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+
+    .logo {
+      color: $text-inverse;
+    }
+
+    .nav-desktop .nav-link {
+      color: rgba(255, 255, 255, 0.8);
+
+      &:hover {
+        color: $primary-light;
+      }
+    }
+
+    .mobile-menu-btn {
+      color: $text-inverse;
+    }
+  }
+}
