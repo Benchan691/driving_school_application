@@ -37,7 +37,6 @@ const Header = () => {
             <Link to="/" className="nav-link">Home</Link>
             <Link to="/packages" className="nav-link" onClick={scrollToTop}>Packages</Link>
             <Link to="/book" className="nav-link" onClick={scrollToTop} style={{display: 'inline-block'}}>Book a Lesson</Link>
-            <Link to="/test-preparation" className="nav-link" onClick={scrollToTop}>Test Prep</Link>
             <Link to="/contact" className="nav-link" onClick={scrollToTop}>Contact</Link>
             {isAuthenticated && (
               user?.user_type === 'admin' ? (
@@ -84,7 +83,6 @@ const Header = () => {
             <Link to="/book" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>
               Book a Lesson
             </Link>
-            <Link to="/test-preparation" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>Test Prep</Link>
             <Link to="/contact" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>Contact</Link>
             
             {isAuthenticated ? (

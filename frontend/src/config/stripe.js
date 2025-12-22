@@ -16,11 +16,3 @@ if (!stripeKey) {
 // Initialize Stripe with your publishable key
 export const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
-// Log for debugging (remove in production)
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔑 Stripe initialized:', {
-    hasKey: !!stripeKey,
-    keyPrefix: stripeKey ? stripeKey.substring(0, 20) + '...' : 'none'
-  });
-}
-

@@ -106,7 +106,10 @@ const corsOptions = {
       'http://www.thetruthdrivingschool.ca',
     ];
     
-    if (allowedOrigins.includes(origin)) {
+    // Allow Cloudflare tunnel URLs (temporary public URLs)
+    const isCloudflareTunnel = origin && origin.includes('.trycloudflare.com');
+    
+    if (allowedOrigins.includes(origin) || isCloudflareTunnel) {
       callback(null, true);
     } else {
       console.warn(`CORS blocked request from origin: ${origin}`);

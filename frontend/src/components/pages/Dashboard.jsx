@@ -190,10 +190,16 @@ const Dashboard = () => {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h3>Your Lessons</h3>
-              <button className="btn btn-primary" onClick={() => navigate('/book')}>
-                <FiCalendar />
-                Book a Lesson
-              </button>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn btn-primary" onClick={() => navigate('/book')}>
+                  <FiCalendar />
+                  Book a Lesson
+                </button>
+                <button className="btn btn-outline" onClick={() => navigate('/test-preparation')}>
+                  <FiBookOpen />
+                  Test Prep
+                </button>
+              </div>
             </div>
 
             <div className="filters" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
