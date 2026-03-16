@@ -87,7 +87,6 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/logs:/app/logs
-      - ./backend/pictures:/app/pictures:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -132,7 +131,7 @@ services:
           memory: 512M
     security_opt:
       - no-new-privileges:true
-    read_only: false
+    read_only: true
 
   # Nginx Reverse Proxy (Production)
   nginx:

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiTruck, FiRotateCcw, FiLayers, FiFileText, FiCheck, FiStar, FiCreditCard } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import PaymentModal from '../payment/PaymentModal';
 import toast from 'react-hot-toast';
 import { API_BASE } from '../../utils/apiBase';
 
 const Packages = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [packages, setPackages] = useState([]);
@@ -89,9 +92,11 @@ const Packages = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = (paymentIntent) => {
+  const handlePaymentSuccess = (result) => {
     toast.success('Payment successful! Your package has been purchased.');
-    // You can redirect to dashboard or show success message
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
   };
 
   const handleCloseModal = () => {
@@ -154,12 +159,8 @@ const Packages = () => {
                 <div className="package-pricing">
                   <div className="price-container">
                     <span className="current-price">${pkg.price}</span>
-                    <span className="original-price">${pkg.originalPrice}</span>
                   </div>
                   <p className="duration">{pkg.duration}</p>
-                  <div className="savings">
-                    Save ${pkg.originalPrice - pkg.price}
-                  </div>
                 </div>
 
                 <div className="package-features">

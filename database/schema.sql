@@ -94,9 +94,12 @@ CREATE TABLE user_packages (
 -- ============================================================================
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
     instructor_id UUID REFERENCES instructors(id) ON DELETE CASCADE,
     vehicle_id UUID,
+    guest_name VARCHAR(200),
+    guest_email VARCHAR(255),
+    guest_phone VARCHAR(30),
     lesson_date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,

@@ -10,38 +10,57 @@
     }
   }
 
-  .buyer-info-section .buyer-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  .guest-info-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+
+    .guest-note {
+      font-size: 13px;
+      color: #64748b;
+      margin: -8px 0 16px 0;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 14px;
 
     label {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 6px;
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 13px;
+      font-weight: 600;
       color: #374151;
+      margin-bottom: 6px;
 
-      .required {
-        color: #dc2626;
+      svg {
+        font-size: 14px;
+        color: #6b7280;
       }
+    }
+  }
 
-      input {
-        padding: 10px 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        font-size: 15px;
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    font-size: 14px;
+    color: #1f2937;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
 
-        &::placeholder {
-          color: #9ca3af;
-        }
-        &:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-        }
-      }
+    &:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+    }
+
+    &::placeholder {
+      color: #9ca3af;
     }
   }
 

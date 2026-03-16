@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
     if (status) where.status = status;
     if (date) where.lesson_date = date;
     const items = await Booking.findAll({ 
-      include: [{ model: User, attributes: ['id', 'name', 'email'], as: 'student' }],
+      include: [{ model: User, attributes: ['id', 'name', 'email', 'phone'], as: 'student' }],
       where, 
       order: [['lesson_date', 'DESC'], ['start_time', 'DESC']] 
     });
@@ -60,16 +60,17 @@ router.get('/', async (req, res) => {
 router.put('/:id/verify', async (req, res) => {
   try {
     const booking = await Booking.findByPk(req.params.id, {
-      include: [{ model: User, attributes: ['id', 'name', 'email'], as: 'student' }]
+      include: [{ model: User, attributes: ['id', 'name', 'email', 'phone'], as: 'student' }]
     });
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     
     await booking.update({ status: 'confirmed' });
     
-    // Send verification email to student
+    // Send verification email to student or guest
     try {
-      if (booking.student) {
-        await emailService.sendBookingVerifiedEmail(booking.student, booking);
+      const recipient = booking.student || (booking.guest_email ? { name: booking.guest_name, email: booking.guest_email } : null);
+      if (recipient) {
+        await emailService.sendBookingVerifiedEmail(recipient, booking);
       }
     } catch (emailError) {
       console.error('Failed to send booking verification email:', emailError);
@@ -186,7 +187,7 @@ router.put('/:id/reject', async (req, res) => {
   try {
     const { rejection_reason } = req.body;
     const booking = await Booking.findByPk(req.params.id, {
-      include: [{ model: User, attributes: ['id', 'name', 'email'], as: 'student' }]
+      include: [{ model: User, attributes: ['id', 'name', 'email', 'phone'], as: 'student' }]
     });
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     
@@ -195,10 +196,11 @@ router.put('/:id/reject', async (req, res) => {
       cancellation_reason: rejection_reason || 'No reason provided'
     });
     
-    // Send rejection email to student
+    // Send rejection email to student or guest
     try {
-      if (booking.student) {
-        await emailService.sendBookingRejectedEmail(booking.student, booking);
+      const recipient = booking.student || (booking.guest_email ? { name: booking.guest_name, email: booking.guest_email } : null);
+      if (recipient) {
+        await emailService.sendBookingRejectedEmail(recipient, booking);
       }
     } catch (emailError) {
       console.error('Failed to send booking rejection email:', emailError);

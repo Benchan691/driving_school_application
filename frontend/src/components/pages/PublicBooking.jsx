@@ -32,7 +32,6 @@ const PublicBooking = () => {
   const [form, setForm] = useState({
     name: '',
     email: '',
-    emailConfirm: '',
     phone: '',
     date: '',
     time: '',
@@ -49,7 +48,6 @@ const PublicBooking = () => {
         ...prev,
         name: user.name || '',
         email: user.email || '',
-        emailConfirm: user.email || '',
         phone: user.phone || ''
       }));
     }
@@ -175,7 +173,7 @@ const PublicBooking = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!form.name || !form.email || !form.emailConfirm || !form.date || !form.time) {
+    if (!form.name || !form.email || !form.date || !form.time) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -184,12 +182,6 @@ const PublicBooking = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       toast.error('Please enter a valid email address');
-      return;
-    }
-
-    // Validate email confirmation
-    if (form.email !== form.emailConfirm) {
-      toast.error('Email addresses do not match. Please check and try again.');
       return;
     }
 
@@ -404,27 +396,6 @@ const PublicBooking = () => {
 
                 <div className="form-field form-field--full">
                   <label className="label">
-                    <FiMail style={{ marginRight: '8px' }} />
-                    Confirm Email Address *
-                  </label>
-                  <input
-                    className="input"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={form.emailConfirm}
-                    onChange={(e) => setForm({ ...form, emailConfirm: e.target.value })}
-                    required
-                  />
-                  <small className="hint">Please re-enter your email address to confirm</small>
-                  {form.emailConfirm && form.email !== form.emailConfirm && (
-                    <small style={{ color: '#ef4444', display: 'block', marginTop: '4px' }}>
-                      Email addresses do not match
-                    </small>
-                  )}
-                </div>
-
-                <div className="form-field form-field--full">
-                  <label className="label">
                     <FiPhone style={{ marginRight: '8px' }} />
                     Phone Number (Optional)
                   </label>
@@ -494,30 +465,9 @@ const PublicBooking = () => {
                 </div>
               </div>
 
-              <div style={{ 
-                background: '#fef3c7', 
-                border: '1px solid #f59e0b', 
-                borderRadius: '8px', 
-                padding: '12px', 
-                marginBottom: '16px',
-                fontSize: '13px',
-                color: '#92400e'
-              }}>
-                ℹ️ <strong>Note:</strong> If you don't have an account, we'll create one for you automatically. 
-                You'll receive login credentials via email.
-              </div>
-
               <div className="actions">
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
                   {submitting ? 'Booking...' : 'Book Lesson'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => navigate('/login')}
-                  style={{ marginLeft: '12px' }}
-                >
-                  Already have an account? Login
                 </button>
               </div>
             </form>

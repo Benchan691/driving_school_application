@@ -1,10 +1,17 @@
 const nodemailer = require('nodemailer');
 const he = require('he');
+// #region agent log
+const fs = require('fs');
+const _debugLog = (data) => { try { fs.appendFileSync('/app/logs/debug.log', JSON.stringify({...data, timestamp: Date.now()}) + '\n'); } catch(e){} };
+// #endregion
 
 class EmailService {
   constructor() {
-    // Create transporter - using Gmail for development
-    // In production, you should use a proper email service like SendGrid, AWS SES, etc.
+    // #region agent log
+    const constructorUser = process.env.EMAIL_USER;
+    const constructorPass = process.env.EMAIL_PASS;
+    _debugLog({location:'emailService.js:constructor',hypothesisId:'A+B+C',message:'Transporter init - env var snapshot',data:{EMAIL_USER_set:!!constructorUser,EMAIL_USER_value:constructorUser,EMAIL_PASS_set:!!constructorPass,EMAIL_PASS_length:constructorPass?constructorPass.length:0,EMAIL_PASS_charCodes:constructorPass?Array.from(constructorPass).map(c=>c.charCodeAt(0)):[],EMAIL_PASS_trimmed_length:constructorPass?constructorPass.trim().length:0,usingFallback_user:!constructorUser,usingFallback_pass:!constructorPass}});
+    // #endregion
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -86,6 +93,11 @@ class EmailService {
       };
 
       console.log('📤 Attempting to send email...');
+      // #region agent log
+      const transporterAuth = this.transporter.options && this.transporter.options.auth;
+      const runtimePass = process.env.EMAIL_PASS;
+      _debugLog({location:'emailService.js:sendMail',hypothesisId:'A+B+C',message:'Pre-sendMail credential check',data:{transporter_auth_user:transporterAuth?transporterAuth.user:'unknown',transporter_auth_pass_length:transporterAuth&&transporterAuth.pass?transporterAuth.pass.length:0,transporter_auth_pass_matches_env:transporterAuth&&transporterAuth.pass===runtimePass,runtime_EMAIL_PASS_length:runtimePass?runtimePass.length:0,runtime_EMAIL_PASS_charCodes:runtimePass?Array.from(runtimePass).map(c=>c.charCodeAt(0)):[],runtime_EMAIL_USER:process.env.EMAIL_USER}});
+      // #endregion
       const result = await this.transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully:', result.messageId);
       console.log('📧 Email response:', result.response);
@@ -95,6 +107,9 @@ class EmailService {
       console.error('  Error code:', error.code);
       console.error('  Error message:', error.message);
       console.error('  Full error:', error);
+      // #region agent log
+      _debugLog({location:'emailService.js:sendEmail:catch',hypothesisId:'A+B+C+D',message:'SMTP error captured',data:{error_code:error.code,error_message:error.message,error_command:error.command,error_response:error.response,error_responseCode:error.responseCode,EMAIL_USER_at_error:process.env.EMAIL_USER,EMAIL_PASS_length_at_error:process.env.EMAIL_PASS?process.env.EMAIL_PASS.length:0}});
+      // #endregion
       
       // Provide specific error guidance
       if (error.code === 'EAUTH') {
@@ -360,57 +375,13 @@ class EmailService {
   }
 
   async sendBookingConfirmationEmail(user, booking) {
-    // Convert booking to plain object to handle Sequelize models
-    const bookingData = booking.toJSON ? booking.toJSON() : booking;
-    
-    // Handle date format - booking may have lesson_date or date
-    const dateValue = bookingData.lesson_date || bookingData.date;
-    let bookingDate = 'N/A';
-    
-    try {
-      if (dateValue) {
-        let dateStr = String(dateValue);
-        
-        // If it's a Date object, convert to ISO string and extract date part
-        if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
-          dateStr = dateValue.toISOString().split('T')[0]; // Get YYYY-MM-DD
-        }
-        
-        // Parse YYYY-MM-DD format
-        const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (dateMatch) {
-          const [, year, month, day] = dateMatch;
-          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                             'July', 'August', 'September', 'October', 'November', 'December'];
-          bookingDate = `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
-        } else {
-          // Try to parse as Date object
-          const dateObj = new Date(dateValue);
-          if (!isNaN(dateObj.getTime())) {
-            bookingDate = dateObj.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-          } else {
-            bookingDate = dateStr;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error formatting booking date:', error);
-      bookingDate = dateValue ? String(dateValue) : 'N/A';
-    }
-    
-    // Handle time format - booking may have start_time or time
-    const timeValue = bookingData.start_time || bookingData.time;
-    const bookingTime = timeValue ? String(timeValue).split(':').slice(0, 2).join(':') : 'N/A';
-    
-    // Format duration consistently
-    const durationMinutes = bookingData.duration_minutes;
-    const duration = durationMinutes === 60 ? '1 hour' : 
-                     durationMinutes === 90 ? '1.5 hours' : 
-                     durationMinutes ? `${durationMinutes} minutes` : '1 hour';
+    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const bookingTime = booking.time;
+    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
 
     const html = `
       <!DOCTYPE html>
@@ -520,12 +491,12 @@ class EmailService {
               </div>
               <div class="booking-row">
                 <span class="booking-label">Instructor:</span>
-                <span class="booking-value">${this.escapeHtml(bookingData.instructor_name || 'To be assigned')}</span>
+                <span class="booking-value">${this.escapeHtml(booking.instructor_name || 'To be assigned')}</span>
               </div>
-              ${bookingData.notes ? `
+              ${booking.notes ? `
               <div class="booking-row">
                 <span class="booking-label">Notes:</span>
-                <span class="booking-value">${this.escapeHtmlWithNewlines(bookingData.notes)}</span>
+                <span class="booking-value">${this.escapeHtmlWithNewlines(booking.notes)}</span>
               </div>
               ` : ''}
             </div>
@@ -557,8 +528,8 @@ Thank you for booking a driving lesson with us! Your booking has been received a
 Date: ${bookingDate}
 Time: ${bookingTime}
 Duration: ${duration}
-Instructor: ${bookingData.instructor_name || 'To be assigned'}
-${bookingData.notes ? `Notes: ${bookingData.notes}` : ''}
+Instructor: ${booking.instructor_name || 'To be assigned'}
+${booking.notes ? `Notes: ${booking.notes}` : ''}
 
 ⏳ Status: Pending Verification
 Please check your email for confirmation once your booking is verified by our team.
@@ -794,57 +765,13 @@ Thank you for choosing our driving school!
   }
 
   async sendBookingRejectedEmail(user, booking) {
-    // Convert booking to plain object to handle Sequelize models
-    const bookingData = booking.toJSON ? booking.toJSON() : booking;
-    
-    // Handle date format - booking may have lesson_date or date
-    const dateValue = bookingData.lesson_date || bookingData.date;
-    let bookingDate = 'N/A';
-    
-    try {
-      if (dateValue) {
-        let dateStr = String(dateValue);
-        
-        // If it's a Date object, convert to ISO string and extract date part
-        if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
-          dateStr = dateValue.toISOString().split('T')[0]; // Get YYYY-MM-DD
-        }
-        
-        // Parse YYYY-MM-DD format
-        const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (dateMatch) {
-          const [, year, month, day] = dateMatch;
-          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                             'July', 'August', 'September', 'October', 'November', 'December'];
-          bookingDate = `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
-        } else {
-          // Try to parse as Date object
-          const dateObj = new Date(dateValue);
-          if (!isNaN(dateObj.getTime())) {
-            bookingDate = dateObj.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-          } else {
-            bookingDate = dateStr;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error formatting booking date:', error);
-      bookingDate = dateValue ? String(dateValue) : 'N/A';
-    }
-    
-    // Handle time format - booking may have start_time or time
-    const timeValue = bookingData.start_time || bookingData.time;
-    const bookingTime = timeValue ? String(timeValue).split(':').slice(0, 2).join(':') : 'N/A';
-    
-    // Format duration consistently
-    const durationMinutes = bookingData.duration_minutes;
-    const duration = durationMinutes === 60 ? '1 hour' : 
-                     durationMinutes === 90 ? '1.5 hours' : 
-                     durationMinutes ? `${durationMinutes} minutes` : '1 hour';
+    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const bookingTime = booking.time;
+    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
 
     const html = `
       <!DOCTYPE html>
@@ -962,12 +889,12 @@ Thank you for choosing our driving school!
               </div>
               <div class="booking-row">
                 <span class="booking-label">Instructor:</span>
-                <span class="booking-value">${this.escapeHtml(bookingData.instructor_name || 'To be assigned')}</span>
+                <span class="booking-value">${this.escapeHtml(booking.instructor_name || 'To be assigned')}</span>
               </div>
-              ${bookingData.notes ? `
+              ${booking.notes ? `
               <div class="booking-row">
                 <span class="booking-label">Notes:</span>
-                <span class="booking-value">${this.escapeHtmlWithNewlines(bookingData.notes)}</span>
+                <span class="booking-value">${this.escapeHtmlWithNewlines(booking.notes)}</span>
               </div>
               ` : ''}
             </div>
@@ -977,10 +904,10 @@ Thank you for choosing our driving school!
               This time slot is no longer available.
             </div>
             
-            ${bookingData.rejection_reason || bookingData.cancellation_reason ? `
+            ${booking.rejection_reason ? `
             <div class="rejection-reason">
               <h4>📝 Reason:</h4>
-              <p>${this.escapeHtmlWithNewlines(bookingData.rejection_reason || bookingData.cancellation_reason)}</p>
+              <p>${this.escapeHtmlWithNewlines(booking.rejection_reason)}</p>
             </div>
             ` : ''}
             
@@ -1007,13 +934,13 @@ We regret to inform you that your driving lesson request could not be confirmed 
 Date: ${bookingDate}
 Time: ${bookingTime}
 Duration: ${duration}
-Instructor: ${bookingData.instructor_name || 'To be assigned'}
-${bookingData.notes ? `Notes: ${bookingData.notes}` : ''}
+Instructor: ${booking.instructor_name || 'To be assigned'}
+${booking.notes ? `Notes: ${booking.notes}` : ''}
 
 ❌ Status: Not Available
 This time slot is no longer available.
 
-${bookingData.rejection_reason || bookingData.cancellation_reason ? `Reason: ${bookingData.rejection_reason || bookingData.cancellation_reason}` : ''}
+${booking.rejection_reason ? `Reason: ${booking.rejection_reason}` : ''}
 
 We apologize for any inconvenience. Please try booking a different time slot, or contact us directly to discuss available options.
 
@@ -1251,114 +1178,13 @@ Thank you for choosing our driving school!
 
   async sendAdminBookingNotification(user, booking) {
     const adminEmail = 'thetruthdrivingschool@gmail.com';
-    
-    // Convert booking to plain object to handle Sequelize models
-    // Use get() with plain:true to get all values properly formatted
-    let bookingData;
-    if (booking.get && typeof booking.get === 'function') {
-      // Get all data values from Sequelize model using get() with plain:true
-      bookingData = booking.get({ plain: true });
-    } else if (booking.toJSON && typeof booking.toJSON === 'function') {
-      bookingData = booking.toJSON();
-    } else {
-      bookingData = booking;
-    }
-    
-    // Ensure we have the date field - try multiple access methods
-    if (!bookingData.lesson_date && !bookingData.date) {
-      // Try direct access as fallback
-      if (booking.lesson_date) bookingData.lesson_date = booking.lesson_date;
-      if (booking.date) bookingData.date = booking.date;
-      // Try getDataValue if available
-      if (booking.getDataValue && typeof booking.getDataValue === 'function') {
-        if (!bookingData.lesson_date) bookingData.lesson_date = booking.getDataValue('lesson_date');
-        if (!bookingData.date) bookingData.date = booking.getDataValue('date');
-      }
-    }
-    
-    // Handle date format - booking may have lesson_date or date
-    const dateValue = bookingData.lesson_date || bookingData.date;
-    let bookingDate = 'N/A';
-    
-    // Debug: Log what we're receiving
-    console.log('📧 Admin notification date debug:', {
-      dateValue,
-      dateValueType: typeof dateValue,
-      isDate: dateValue instanceof Date,
-      bookingDataKeys: Object.keys(bookingData),
-      lesson_date: bookingData.lesson_date,
-      date: bookingData.date
+    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    
-    try {
-      if (dateValue) {
-        let dateStr;
-        
-        // Handle Date objects first
-        if (dateValue instanceof Date) {
-          if (!isNaN(dateValue.getTime())) {
-            dateStr = dateValue.toISOString().split('T')[0]; // Get YYYY-MM-DD
-          } else {
-            console.error('Invalid Date object received:', dateValue);
-            bookingDate = 'N/A';
-            dateStr = null;
-          }
-        } else {
-          // Convert to string
-          dateStr = String(dateValue);
-          
-          // Check if it's already "Invalid Date" string
-          if (dateStr === 'Invalid Date' || dateStr.toLowerCase().includes('invalid')) {
-            console.error('Received "Invalid Date" string:', dateValue);
-            bookingDate = 'N/A';
-            dateStr = null;
-          }
-        }
-        
-        if (dateStr) {
-          // Parse YYYY-MM-DD format (most common from Sequelize DATEONLY)
-          const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-          if (dateMatch) {
-            const [, year, month, day] = dateMatch;
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                               'July', 'August', 'September', 'October', 'November', 'December'];
-            bookingDate = `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
-          } else {
-            // Try to parse as Date object only if it's not already a Date
-            if (!(dateValue instanceof Date)) {
-              const dateObj = new Date(dateValue);
-              if (!isNaN(dateObj.getTime())) {
-                bookingDate = dateObj.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                });
-              } else {
-                console.warn('Could not parse date:', dateValue, 'as string:', dateStr);
-                bookingDate = 'N/A';
-              }
-            }
-          }
-        }
-      } else {
-        console.warn('No date value found:', { bookingData });
-      }
-    } catch (error) {
-      console.error('Error formatting booking date:', error, { dateValue, bookingData });
-      bookingDate = 'N/A';
-    }
-    
-    console.log('📧 Admin notification - final formatted date:', bookingDate);
-    
-    // Handle time format - booking may have start_time or time
-    const timeValue = bookingData.start_time || bookingData.time;
-    const bookingTime = timeValue ? String(timeValue).split(':').slice(0, 2).join(':') : 'N/A';
-    
-    // Format duration consistently
-    const durationMinutes = bookingData.duration_minutes;
-    const duration = durationMinutes === 60 ? '1 hour' : 
-                     durationMinutes === 90 ? '1.5 hours' : 
-                     durationMinutes ? `${durationMinutes} minutes` : '1 hour';
+    const bookingTime = booking.time;
+    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
 
     const html = `
       <!DOCTYPE html>
@@ -1437,17 +1263,17 @@ Thank you for choosing our driving school!
               </div>
               <div class="detail-row">
                 <span class="label">Instructor:</span>
-                <span class="value">${this.escapeHtml(bookingData.instructor_name || 'Not assigned')}</span>
+                <span class="value">${this.escapeHtml(booking.instructor_name || 'Not assigned')}</span>
               </div>
-              ${bookingData.notes ? `
+              ${booking.notes ? `
               <div class="detail-row">
                 <span class="label">Notes:</span>
-                <span class="value">${this.escapeHtmlWithNewlines(bookingData.notes)}</span>
+                <span class="value">${this.escapeHtmlWithNewlines(booking.notes)}</span>
               </div>
               ` : ''}
               <div class="detail-row">
                 <span class="label">Status:</span>
-                <span class="value">${this.escapeHtml(bookingData.status || 'pending')}</span>
+                <span class="value">${this.escapeHtml(booking.status)}</span>
               </div>
             </div>
             
@@ -1482,9 +1308,9 @@ Phone: ${user.phone || 'Not provided'}
 Date: ${bookingDate}
 Time: ${bookingTime}
 Duration: ${duration}
-Instructor: ${bookingData.instructor_name || 'Not assigned'}
-${bookingData.notes ? `Notes: ${bookingData.notes}` : ''}
-Status: ${bookingData.status || 'pending'}
+Instructor: ${booking.instructor_name || 'Not assigned'}
+${booking.notes ? `Notes: ${booking.notes}` : ''}
+Status: ${booking.status}
 
 Next Steps:
 1. Login to the admin dashboard
@@ -1505,37 +1331,13 @@ This is an automated notification.
 
   async sendAdminContactNotification(contactMessage) {
     const adminEmail = 'thetruthdrivingschool@gmail.com';
-    let date;
-    try {
-      const dateStr = contactMessage.created_at || new Date();
-      const dateObj = new Date(dateStr);
-      if (!isNaN(dateObj.getTime())) {
-        date = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      } else {
-        date = new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
-    } catch (error) {
-      console.error('Error formatting contact date:', error);
-      date = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
+    const date = new Date(contactMessage.created_at || new Date()).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
 
     const html = `
       <!DOCTYPE html>
@@ -1673,87 +1475,25 @@ This is an automated notification.
     );
   }
 
-  async sendGuestBookingConfirmationEmail(user, booking, isNewUser, temporaryPassword) {
-    // Validate parameters
-    if (!user || !booking) {
-      console.error('sendGuestBookingConfirmationEmail: Missing required parameters', { user: !!user, booking: !!booking });
+  async sendGuestBookingConfirmationEmail(guest, booking) {
+    if (!guest || !booking) {
       throw new Error('Missing required parameters for guest booking confirmation email');
     }
 
-    // Log for debugging
-    console.log('📧 Sending guest booking confirmation email:', {
-      userEmail: user.email,
-      isNewUser,
-      hasTemporaryPassword: !!temporaryPassword,
-      temporaryPasswordLength: temporaryPassword ? temporaryPassword.length : 0
+    const bookingDate = new Date(booking.lesson_date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-
-    // Handle date format - booking may have lesson_date or date
-    const dateStr = booking.lesson_date || booking.date;
-    let bookingDate;
-    try {
-      if (dateStr) {
-        const dateObj = new Date(dateStr);
-        if (!isNaN(dateObj.getTime())) {
-          bookingDate = dateObj.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-        } else {
-          bookingDate = dateStr; // Use as-is if parsing fails
-        }
-      } else {
-        bookingDate = 'N/A';
-      }
-    } catch (error) {
-      console.error('Error formatting booking date:', error);
-      bookingDate = dateStr || 'N/A';
-    }
-    
-    // Handle time format - booking may have start_time or time
-    const bookingTime = booking.start_time || booking.time || 'N/A';
-    const duration = booking.end_time ? 
+    const bookingTime = booking.start_time;
+    const duration = booking.end_time ?
       (() => {
         const [startH, startM] = booking.start_time.split(':').map(Number);
         const [endH, endM] = booking.end_time.split(':').map(Number);
-        const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
-        const diffMinutes = endMinutes - startMinutes;
+        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
         return diffMinutes === 90 ? '1.5 hours' : '1 hour';
       })() : '1 hour';
     const bookingReference = booking.id;
-
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost'}/login`;
-    console.log('🔗 Login URL for email:', loginUrl);
-    
-    // Ensure temporaryPassword is provided for new users
-    if (isNewUser && !temporaryPassword) {
-      console.warn('⚠️ Warning: isNewUser is true but temporaryPassword is missing. Account info section will not include password.');
-    }
-    
-    const accountInfoSection = isNewUser ? `
-      <div style="background: #dcfce7; border: 2px solid #16a34a; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3 style="margin-top: 0; color: #166534;">🔐 Your Account Has Been Created</h3>
-        <p>We've automatically created an account for you so you can manage your bookings online.</p>
-        <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
-          <p style="margin: 5px 0;"><strong>Email Address:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${this.escapeHtml(user.email)}</code></p>
-          ${temporaryPassword ? `
-          <p style="margin: 5px 0;"><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 16px; letter-spacing: 1px; font-weight: bold; color: #166534;">${this.escapeHtml(temporaryPassword)}</code></p>
-          ` : `
-          <p style="margin: 5px 0; color: #dc2626;"><strong>⚠️ Password not set:</strong> Please use the "Forgot Password" feature to set your password.</p>
-          `}
-        </div>
-        <p><strong>⚠️ Important:</strong> Please change your password after logging in for security.</p>
-        <a href="${this.sanitizeUrl(loginUrl)}" style="display: inline-block; background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">Login to Your Account</a>
-      </div>
-    ` : `
-      <div style="background: #dbeafe; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3 style="margin-top: 0; color: #1e40af;">👋 Welcome Back!</h3>
-        <p>Your booking has been added to your existing account.</p>
-        <a href="${this.sanitizeUrl(loginUrl)}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Your Bookings</a>
-      </div>
-    `;
 
     const html = `
       <!DOCTYPE html>
@@ -1858,7 +1598,7 @@ This is an automated notification.
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Your lesson has been scheduled</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(guest.name?.split(' ')[0] || 'there')},</p>
             <p>Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.</p>
             
             <div class="reference-box">
@@ -1894,12 +1634,10 @@ This is an automated notification.
             
             <div class="status-pending">
               ⏳ <strong>Status: Pending Verification</strong><br>
-              Please check your email for confirmation once your booking is verified by our team.
+              We'll send you another email once your booking is confirmed by our team.
             </div>
             
-            ${accountInfoSection}
-            
-            <p>We'll send you another email once your booking is confirmed. If you need to make any changes, please contact us as soon as possible.</p>
+            <p>If you need to make any changes or have questions, please contact us as soon as possible.</p>
             <p>Thank you for choosing The Truth Driving School!</p>
           </div>
           <div class="footer">
@@ -1914,7 +1652,7 @@ This is an automated notification.
     const text = `
 📅 Booking Confirmation - Your lesson has been scheduled
 
-Hello ${user.first_name},
+Hello ${this.escapeHtml(guest.name?.split(' ')[0] || 'there')},
 
 Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.
 
@@ -1928,26 +1666,9 @@ Status: Pending Verification
 ${booking.notes ? `Notes: ${booking.notes}` : ''}
 
 ⏳ Status: Pending Verification
-Please check your email for confirmation once your booking is verified by our team.
+We'll send you another email once your booking is confirmed by our team.
 
-${isNewUser ? `
-🔐 Your Account Has Been Created
-We've automatically created an account for you so you can manage your bookings online.
-
-Email Address: ${user.email}
-${temporaryPassword ? `Temporary Password: ${temporaryPassword}` : '⚠️ Password not set: Please use the "Forgot Password" feature to set your password.'}
-
-⚠️ Important: Please change your password after logging in for security.
-
-Login to your account: ${loginUrl}
-` : `
-👋 Welcome Back!
-Your booking has been added to your existing account.
-
-View your bookings: ${loginUrl}
-`}
-
-We'll send you another email once your booking is confirmed. If you need to make any changes, please contact us as soon as possible.
+If you need to make any changes or have questions, please contact us as soon as possible.
 
 Thank you for choosing The Truth Driving School!
 
@@ -1956,7 +1677,7 @@ Phone: +1 (604) 773 8906 | Email: thetruthdrivingschool@gmail.com
     `;
 
     return await this.sendEmail(
-      user.email,
+      guest.email,
       'Booking Confirmation - The Truth Driving School',
       html,
       text

@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { Booking, UserPackage, User } = require('../models');
 const { Op } = require('sequelize');
@@ -131,37 +130,19 @@ router.post('/public', validateGuestBooking, async (req, res) => {
       });
     }
 
-    // Lookup or create user
-    let user = await User.findOne({ where: { email } });
-    let isNewUser = false;
-    let temporaryPassword = null;
-
-    if (!user) {
-      // Generate secure random password
-      temporaryPassword = crypto.randomBytes(16).toString('base64').slice(0, 16);
-
-      // Create new user account
-      user = await User.create({
-        name: name.trim(),
-        email,
-        phone: phone || null,
-        password: temporaryPassword, // Will be hashed by User model hook
-        user_type: 'student',
-        email_verified: true // Auto-verify for guest bookings
-      });
-      
-      isNewUser = true;
-      console.log(`Created new user account for guest booking: ${email}`);
-    }
-
     // Calculate end_time based on duration
     const startTime = new Date(`2000-01-01T${time}:00`);
     const endTime = new Date(startTime.getTime() + (duration_minutes || 60) * 60000);
     const end_time = endTime.toTimeString().slice(0, 5);
 
-    // Create the booking (guests cannot use packages)
+    const guest = { name: name.trim(), email, phone: phone || null };
+
+    // Create the booking with guest info stored directly (no user account created)
     const booking = await Booking.create({
-      student_id: user.id,
+      student_id: null,
+      guest_name: guest.name,
+      guest_email: guest.email,
+      guest_phone: guest.phone,
       lesson_date: date,
       start_time: time,
       end_time: end_time,
@@ -169,33 +150,20 @@ router.post('/public', validateGuestBooking, async (req, res) => {
       instructor_id: null,
       notes: notes || '',
       status: 'pending',
-      package_id: null // Guests cannot use packages
+      package_id: null
     });
 
     // Send guest booking confirmation email
     try {
-      console.log('📧 Preparing to send guest booking confirmation email:', {
-        userEmail: user.email,
-        isNewUser,
-        hasTemporaryPassword: !!temporaryPassword,
-        bookingId: booking.id
-      });
-      await emailService.sendGuestBookingConfirmationEmail(user, booking, isNewUser, temporaryPassword);
-      console.log('✅ Guest booking confirmation email sent successfully');
+      await emailService.sendGuestBookingConfirmationEmail(guest, booking);
     } catch (emailError) {
-      console.error('❌ Failed to send guest booking confirmation email:', emailError);
-      console.error('Email error details:', {
-        message: emailError.message,
-        stack: emailError.stack
-      });
+      console.error('Failed to send guest booking confirmation email:', emailError);
       // Don't fail the booking if email fails
     }
 
     // Send notification email to admin
     try {
-      // Reload booking to ensure all fields are properly loaded
-      await booking.reload();
-      await emailService.sendAdminBookingNotification(user, booking);
+      await emailService.sendAdminBookingNotification(guest, booking);
     } catch (emailError) {
       console.error('Failed to send admin booking notification:', emailError);
       // Don't fail the booking if email fails
@@ -205,14 +173,7 @@ router.post('/public', validateGuestBooking, async (req, res) => {
       success: true, 
       data: {
         ...booking.toJSON(),
-        booking_reference: booking.id,
-        is_new_user: isNewUser,
-        user: {
-          id: user.id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name
-        }
+        booking_reference: booking.id
       }
     });
   } catch (error) {
@@ -328,8 +289,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Send notification email to admin
     try {
-      // Reload booking to ensure all fields are properly loaded
-      await booking.reload();
       await emailService.sendAdminBookingNotification(req.user, booking);
     } catch (emailError) {
       console.error('Failed to send admin booking notification:', emailError);

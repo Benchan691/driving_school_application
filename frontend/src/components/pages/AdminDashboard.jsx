@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign, FiXCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign, FiXCircle, FiLayers } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import TodayTimetable from '../common/TodayTimetable';
 import PaymentManagement from './PaymentManagement';
+import PackageManagement from './PackageManagement';
 import '../../styles/pages/admin.scss';
 
 const AdminDashboard = () => {
@@ -14,12 +15,10 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, instructor_name: '', notes: '', status: 'scheduled', payment_method: 'Cash' });
+  const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, notes: '', status: 'scheduled' });
 
-  const [view, setView] = useState('bookings'); // bookings | users | contacts | timetable | payments | packages
-  const [users, setUsers] = useState([]);
+  const [view, setView] = useState('bookings'); // bookings | contacts | timetable | payments | packages
   const [contacts, setContacts] = useState([]);
-  const [packages, setPackages] = useState([]);
   const [messageModal, setMessageModal] = useState({ open: false, record: null });
   const [replyModal, setReplyModal] = useState({ open: false, record: null });
   const [replyMessage, setReplyMessage] = useState('');
@@ -28,13 +27,10 @@ const AdminDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
   const [verifying, setVerifying] = useState(null); // Track which booking is being verified
-  const [packageModal, setPackageModal] = useState({ open: false, package: null });
 
   // Filters
   const [bookingFilters, setBookingFilters] = useState({ status: 'all', q: '', dateFrom: '', dateTo: '' });
-  const [userFilters, setUserFilters] = useState({ role: 'all', active: 'all', verified: 'all', q: '' });
   const [contactFilters, setContactFilters] = useState({ status: 'all', q: '' });
-  const [packageFilters, setPackageFilters] = useState({ type: 'all', q: '' });
 
   // Derived filtered data
   const filteredBookings = useMemo(() => {
@@ -58,15 +54,6 @@ const AdminDashboard = () => {
     });
   }, [bookings, bookingFilters]);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const matchRole = userFilters.role === 'all' || u.user_type === userFilters.role;
-      const q = userFilters.q.trim().toLowerCase();
-      const matchQ = !q || [u.name || '', u.email || '', String(u.id)].some(v => String(v).toLowerCase().includes(q));
-      return matchRole && matchQ;
-    });
-  }, [users, userFilters]);
-
   const filteredContacts = useMemo(() => {
     return contacts.filter(m => {
       const matchStatus = contactFilters.status === 'all' || m.status === contactFilters.status;
@@ -75,15 +62,6 @@ const AdminDashboard = () => {
       return matchStatus && matchQ;
     });
   }, [contacts, contactFilters]);
-
-  const filteredPackages = useMemo(() => {
-    return packages.filter(p => {
-      const matchType = packageFilters.type === 'all' || p.package_type === packageFilters.type;
-      const q = packageFilters.q.trim().toLowerCase();
-      const matchQ = !q || [p.name || '', p.description || '', String(p.price || '')].some(v => String(v).toLowerCase().includes(q));
-      return matchType && matchQ;
-    });
-  }, [packages, packageFilters]);
 
   // Today's lesson count for badge
   const todayLessonsCount = useMemo(() => {
@@ -100,21 +78,11 @@ const AdminDashboard = () => {
         if (!res.ok) { const txt = await res.text(); throw new Error(`${res.status} ${res.statusText} - ${txt}`); }
         const data = await res.json();
         setBookings(Array.isArray(data.data) ? data.data : []);
-      } else if (view === 'users') {
-        const resU = await fetch(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!resU.ok) { const txt = await resU.text(); throw new Error(`${resU.status} ${resU.statusText} - ${txt}`); }
-        const dataU = await resU.json();
-        setUsers(Array.isArray(dataU.data) ? dataU.data : []);
       } else if (view === 'contacts') {
         const resC = await fetch(`${API_BASE}/api/contact/admin`, { headers: { Authorization: `Bearer ${token}` } });
         if (!resC.ok) { const txt = await resC.text(); throw new Error(`${resC.status} ${resC.statusText} - ${txt}`); }
         const dataC = await resC.json();
         setContacts(Array.isArray(dataC.data) ? dataC.data : []);
-      } else if (view === 'packages') {
-        const resP = await fetch(`${API_BASE}/api/packages`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!resP.ok) { const txt = await resP.text(); throw new Error(`${resP.status} ${resP.statusText} - ${txt}`); }
-        const dataP = await resP.json();
-        setPackages(Array.isArray(dataP.data) ? dataP.data : []);
       }
     } catch (e) {
       setError(e.message || 'Failed to load bookings');
@@ -128,60 +96,19 @@ const AdminDashboard = () => {
 
   const startEdit = (b) => {
     setEditing(b.id);
-    setForm({ date: b.date, time: b.time, duration_minutes: b.duration_minutes || 60, instructor_name: b.instructor_name || '', notes: b.notes || '', status: b.status, payment_method: b.payment_method || 'Cash' });
+    setForm({ date: b.date, time: b.time, duration_minutes: b.duration_minutes || 60, notes: b.notes || '', status: b.status });
   };
 
   const saveEdit = async () => {
-    if (String(editing).startsWith('user-')) {
-      const userId = String(editing).replace('user-','');
-      const payload = {
-        name: form.name,
-        email: form.email,
-        user_type: form.user_type,
-      };
-      const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setUsers(prev => prev.map(u => u.id === data.data.id ? data.data : u));
-        setEditing(null);
-      }
-    } else {
-      const res = await fetch(`${API_BASE}/api/admin/bookings/${editing}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setBookings((prev) => prev.map(b => b.id === editing ? data.data : b));
-        setEditing(null);
-      }
-    }
-  };
-
-  const savePackage = async () => {
-    if (!packageModal.package) return;
-    const payload = {
-      name: form.package_name,
-      description: form.package_description,
-      price: parseFloat(form.package_price),
-      original_price: form.package_original_price ? parseFloat(form.package_original_price) : null,
-      number_of_lessons: parseInt(form.package_number_of_lessons),
-      duration_hours: form.package_duration_hours ? parseFloat(form.package_duration_hours) : null,
-      package_type: form.package_type,
-      is_popular: form.package_is_popular === true || form.package_is_popular === 'true',
-      is_active: form.package_is_active !== false && form.package_is_active !== 'false',
-      features: form.package_features || []
-    };
-    const res = await fetch(`${API_BASE}/api/packages/${packageModal.package.id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload)
+    const res = await fetch(`${API_BASE}/api/admin/bookings/${editing}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(form)
     });
     const data = await res.json();
     if (data?.success) {
-      setPackages(prev => prev.map(p => p.id === data.data.id ? data.data : p));
-      setPackageModal({ open: false, package: null });
+      setBookings((prev) => prev.map(b => b.id === editing ? data.data : b));
+      setEditing(null);
     }
   };
 
@@ -327,11 +254,12 @@ const AdminDashboard = () => {
         <div className="admin-actions" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className={`btn ${view==='bookings' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('bookings')}>Bookings</button>
-            <button className={`btn ${view==='users' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('users')}>Users</button>
             <button className={`btn ${view==='contacts' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('contacts')}>Contacts</button>
-            <button className={`btn ${view==='packages' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('packages')}>Packages</button>
             <button className={`btn ${view==='payments' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('payments')}>
               <FiDollarSign /> Payments
+            </button>
+            <button className={`btn ${view==='packages' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('packages')}>
+              <FiLayers /> Packages
             </button>
             <button className={`btn ${view==='timetable' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('timetable')}>
               <FiCalendar /> Lessons Today
@@ -385,11 +313,11 @@ const AdminDashboard = () => {
               <tr>
                 <th>Reference</th>
                 <th>User</th>
+                <th>Email</th>
+                <th>Phone</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>Duration</th>
-                <th>Payment Method</th>
-                <th>Instructor</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -397,7 +325,7 @@ const AdminDashboard = () => {
             <tbody>
               {filteredBookings.length === 0 && !loading && (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
+                  <td colSpan="9" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
                 </tr>
               )}
               {filteredBookings.map(b => {
@@ -426,10 +354,14 @@ const AdminDashboard = () => {
                     </code>
                   </td>
                   <td>
-                    <button className="link" onClick={()=>{ setView('users'); setUsers(prev => prev); }}>
-                      {b.student ? b.student.name : `User #${b.student_id?.slice(0,8)}`}
-                    </button>
+                    {b.student
+                      ? b.student.name
+                      : b.guest_name
+                        ? <>{b.guest_name} <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Guest</span></>
+                        : `User #${b.student_id?.slice(0,8)}`}
                   </td>
+                  <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.email || b.guest_email || '-'}</td>
+                  <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.phone || b.guest_phone || '-'}</td>
                   <td>{editing === b.id ? (
                     <input 
                       type="date" 
@@ -474,50 +406,6 @@ const AdminDashboard = () => {
                       <option value={90}>1.5h</option>
                     </select>
                   ) : `${b.duration_minutes || 60}m`}</td>
-                  <td>
-                    {editing === b.id ? (
-                      <select 
-                        value={form.payment_method} 
-                        onChange={(e)=>setForm({...form, payment_method: e.target.value})}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          border: '2px solid #e5e7eb',
-                          fontSize: '13px',
-                          fontWeight: '500'
-                        }}
-                      >
-                        <option value="Cash">Cash</option>
-                        <option value="Paid Online">Paid Online</option>
-                      </select>
-                    ) : (
-                      <span style={{ 
-                        background: b.payment_method === 'Paid Online' ? '#10b981' : '#f59e0b', 
-                        color: 'white', 
-                        padding: '4px 10px', 
-                        borderRadius: '12px', 
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        display: 'inline-block'
-                      }}>
-                        {b.payment_method || 'Cash'}
-                      </span>
-                    )}
-                  </td>
-                  <td>{editing === b.id ? (
-                    <input 
-                      type="text" 
-                      value={form.instructor_name} 
-                      onChange={(e)=>setForm({...form, instructor_name: e.target.value})}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        border: '2px solid #e5e7eb',
-                        fontSize: '13px',
-                        fontWeight: '500'
-                      }}
-                    />
-                  ) : (b.instructor_name || '-')}</td>
                   <td>{editing === b.id ? (
                     <select 
                       value={form.status} 
@@ -623,98 +511,6 @@ const AdminDashboard = () => {
         </div>
         )}
 
-        {view === 'users' && (
-        <div className="table-card" style={{ marginTop: 12 }}>
-          <div className="table-filters" style={{ display:'flex', gap:8, padding: '8px 8px 0 8px', flexWrap:'wrap' }}>
-            <select value={userFilters.role} onChange={(e)=>setUserFilters({ ...userFilters, role: e.target.value })}>
-              <option value="all">All roles</option>
-              <option value="student">student</option>
-              <option value="instructor">instructor</option>
-              <option value="admin">admin</option>
-            </select>
-            <input className="input" placeholder="Search name/email/id" value={userFilters.q} onChange={(e)=>setUserFilters({ ...userFilters, q: e.target.value })} />
-          </div>
-          <div className="table-responsive">
-            <table className="table table--styled table--admin">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length === 0 && !loading && (
-                  <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: '#64748b' }}>No users found.</td>
-                  </tr>
-                )}
-                {filteredUsers.map((u, index) => {
-                  const isEditing = editing === `user-${u.id}`;
-                  return (
-                  <tr key={u.id}>
-                    <td>{index + 1}</td>
-                    <td>
-                      {isEditing ? (
-                        <input className="input" type="text" value={form.name} onChange={(e)=>setForm({...form, name: e.target.value})} placeholder="Full Name" />
-                      ) : (
-                        <>{u.name || 'N/A'}</>
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input className="input" type="email" value={form.email} onChange={(e)=>setForm({...form, email: e.target.value})} />
-                      ) : u.email}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <select className="input" value={form.user_type} onChange={(e)=>setForm({...form, user_type: e.target.value})}>
-                          <option value="student">student</option>
-                          <option value="instructor">instructor</option>
-                          <option value="admin">admin</option>
-                        </select>
-                      ) : u.user_type}
-                    </td>
-                    <td>{new Date(u.createdAt || u.created_at).toLocaleDateString()}</td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      {isEditing ? (
-                        <button className="btn btn-sm btn-primary" onClick={saveEdit} title="Save">
-                          <FiSave />
-                        </button>
-                      ) : (
-                        <>
-                          <button className="btn btn-sm btn-outline" onClick={()=>{
-                            setEditing(`user-${u.id}`);
-                            setForm({
-                              date: '', time: '', duration_minutes: 60, instructor_name: '', notes: '', status: 'scheduled',
-                              name: u.name || '',
-                              email: u.email,
-                              user_type: u.user_type,
-                            });
-                          }} title="Edit">
-                            <FiEdit3 />
-                          </button>
-                          <button className="btn btn-sm btn-ghost" onClick={async()=>{
-                            if (!window.confirm('Delete this user?')) return;
-                            const res = await fetch(`${API_BASE}/api/admin/users/${u.id}`, { method:'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                            const data = await res.json();
-                            if (data?.success) setUsers(prev => prev.filter(x => x.id !== u.id));
-                          }} title="Delete">
-                            <FiTrash2 />
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        )}
 
         {view === 'contacts' && (
         <div className="table-card" style={{ marginTop: 12 }}>
@@ -804,99 +600,12 @@ const AdminDashboard = () => {
         </div>
         )}
 
-        {view === 'packages' && (
-        <div className="table-card" style={{ marginTop: 12 }}>
-          <div className="table-filters" style={{ display:'flex', gap:8, padding: '8px 8px 0 8px', flexWrap:'wrap' }}>
-            <select value={packageFilters.type} onChange={(e)=>setPackageFilters({ ...packageFilters, type: e.target.value })}>
-              <option value="all">All types</option>
-              <option value="single">single</option>
-              <option value="package">package</option>
-              <option value="road_test">road_test</option>
-            </select>
-            <input className="input" placeholder="Search name/description/price" value={packageFilters.q} onChange={(e)=>setPackageFilters({ ...packageFilters, q: e.target.value })} />
-          </div>
-          <div className="table-responsive" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-            <table className="table table--styled table--admin" style={{ fontSize: '13px' }}>
-              <thead style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 10 }}>
-                <tr>
-                  <th style={{ minWidth: '120px', maxWidth: '150px' }}>Name</th>
-                  <th style={{ minWidth: '150px', maxWidth: '200px' }}>Description</th>
-                  <th style={{ minWidth: '80px', maxWidth: '100px' }}>Price</th>
-                  <th style={{ minWidth: '100px', maxWidth: '120px' }}>Original</th>
-                  <th style={{ minWidth: '70px', maxWidth: '80px' }}>Lessons</th>
-                  <th style={{ minWidth: '80px', maxWidth: '90px' }}>Hours</th>
-                  <th style={{ minWidth: '80px', maxWidth: '100px' }}>Type</th>
-                  <th style={{ minWidth: '60px', maxWidth: '70px' }}>Popular</th>
-                  <th style={{ minWidth: '60px', maxWidth: '70px' }}>Active</th>
-                  <th style={{ minWidth: '100px', maxWidth: '120px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPackages.length === 0 && !loading && (
-                  <tr>
-                    <td colSpan="10" style={{ textAlign: 'center', color: '#64748b' }}>No packages found.</td>
-                  </tr>
-                )}
-                {filteredPackages.map((p) => {
-                  return (
-                  <tr key={p.id}>
-                    <td><strong style={{ fontSize: '13px' }}>{p.name}</strong></td>
-                    <td>
-                      <span style={{ 
-                        maxWidth: '200px', 
-                        display: 'block', 
-                        whiteSpace: 'nowrap', 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis',
-                        fontSize: '12px'
-                      }}>
-                        {p.description || '-'}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: '600' }}>${parseFloat(p.price || 0).toFixed(2)}</td>
-                    <td style={{ fontSize: '12px' }}>{p.original_price ? `$${parseFloat(p.original_price).toFixed(2)}` : '-'}</td>
-                    <td>{p.number_of_lessons || '-'}</td>
-                    <td>{p.duration_hours ? parseFloat(p.duration_hours).toFixed(1) : '-'}</td>
-                    <td><span style={{ fontSize: '12px', padding: '2px 6px', background: '#e0e7ff', borderRadius: '4px' }}>{p.package_type || '-'}</span></td>
-                    <td style={{ textAlign: 'center' }}>{p.is_popular ? '✓' : '-'}</td>
-                    <td style={{ textAlign: 'center' }}>{p.is_active !== false ? '✓' : '✗'}</td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-sm btn-outline" onClick={()=>{
-                        setPackageModal({ open: true, package: p });
-                        setForm({
-                          package_name: p.name || '',
-                          package_description: p.description || '',
-                          package_price: p.price || '',
-                          package_original_price: p.original_price || '',
-                          package_number_of_lessons: p.number_of_lessons || '',
-                          package_duration_hours: p.duration_hours || '',
-                          package_type: p.package_type || 'single',
-                          package_is_popular: p.is_popular || false,
-                          package_is_active: p.is_active !== false,
-                          package_features: Array.isArray(p.features) ? p.features : []
-                        });
-                      }} title="Edit">
-                        <FiEdit3 />
-                      </button>
-                      <button className="btn btn-sm btn-ghost" onClick={async()=>{
-                        if (!window.confirm('Delete this package?')) return;
-                        const res = await fetch(`${API_BASE}/api/packages/${p.id}`, { method:'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                        const data = await res.json();
-                        if (data?.success) setPackages(prev => prev.filter(x => x.id !== p.id));
-                      }} title="Delete">
-                        <FiTrash2 />
-                      </button>
-                    </td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        )}
-
         {view === 'payments' && (
           <PaymentManagement />
+        )}
+
+        {view === 'packages' && (
+          <PackageManagement token={token} />
         )}
 
         {view === 'timetable' && (
@@ -1062,149 +771,6 @@ const AdminDashboard = () => {
                       Reject Booking
                     </>
                   )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Package Edit Modal */}
-        {packageModal.open && packageModal.package && (
-          <div className="modal-overlay" onClick={()=>setPackageModal({ open: false, package: null })}>
-            <div className="modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-              <div className="modal-header">
-                <h3>Edit Package: {packageModal.package.name}</h3>
-                <button className="btn btn-sm btn-ghost" onClick={()=>setPackageModal({ open: false, package: null })}>
-                  <FiXCircle />
-                </button>
-              </div>
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Package Name *</label>
-                  <input 
-                    className="input" 
-                    type="text" 
-                    value={form.package_name || ''} 
-                    onChange={(e)=>setForm({...form, package_name: e.target.value})} 
-                    placeholder="Package Name"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                
-                <div>
-                  <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Description *</label>
-                  <textarea 
-                    className="input" 
-                    rows="4" 
-                    value={form.package_description || ''} 
-                    onChange={(e)=>setForm({...form, package_description: e.target.value})} 
-                    placeholder="Package description"
-                    style={{ width: '100%', resize: 'vertical' }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Price (CAD) *</label>
-                    <input 
-                      className="input" 
-                      type="number" 
-                      step="0.01" 
-                      value={form.package_price || ''} 
-                      onChange={(e)=>setForm({...form, package_price: e.target.value})} 
-                      placeholder="0.00"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Original Price (CAD)</label>
-                    <input 
-                      className="input" 
-                      type="number" 
-                      step="0.01" 
-                      value={form.package_original_price || ''} 
-                      onChange={(e)=>setForm({...form, package_original_price: e.target.value})} 
-                      placeholder="0.00"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Number of Lessons *</label>
-                    <input 
-                      className="input" 
-                      type="number" 
-                      value={form.package_number_of_lessons || ''} 
-                      onChange={(e)=>setForm({...form, package_number_of_lessons: e.target.value})} 
-                      placeholder="1"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Duration (hours)</label>
-                    <input 
-                      className="input" 
-                      type="number" 
-                      step="0.5" 
-                      value={form.package_duration_hours || ''} 
-                      onChange={(e)=>setForm({...form, package_duration_hours: e.target.value})} 
-                      placeholder="1.0"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="label" style={{ display: 'block', marginBottom: '6px' }}>Package Type *</label>
-                    <select 
-                      className="input" 
-                      value={form.package_type || ''} 
-                      onChange={(e)=>setForm({...form, package_type: e.target.value})}
-                      style={{ width: '100%' }}
-                    >
-                      <option value="single">single</option>
-                      <option value="package">package</option>
-                      <option value="road_test">road_test</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.package_is_popular === true || form.package_is_popular === 'true'} 
-                      onChange={(e)=>setForm({...form, package_is_popular: e.target.checked})} 
-                    />
-                    <span>Mark as Popular</span>
-                  </label>
-                  
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.package_is_active !== false && form.package_is_active !== 'false'} 
-                      onChange={(e)=>setForm({...form, package_is_active: e.target.checked})} 
-                    />
-                    <span>Active</span>
-                  </label>
-                </div>
-              </div>
-              <div className="modal-footer" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button 
-                  className="btn btn-outline" 
-                  onClick={()=>setPackageModal({ open: false, package: null })}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={savePackage}
-                >
-                  <FiSave style={{ marginRight: '6px' }} />
-                  Save Changes
                 </button>
               </div>
             </div>

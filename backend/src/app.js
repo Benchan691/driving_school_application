@@ -38,22 +38,8 @@ const PORT = process.env.PORT || 5001;
 let redisClient;
 const initRedis = async () => {
   try {
-    // Build Redis URL with password if provided
-    let redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) {
-      const redisHost = process.env.REDIS_HOST || 'redis';
-      const redisPort = process.env.REDIS_PORT || 6379;
-      const redisPassword = process.env.REDIS_PASSWORD;
-      if (redisPassword) {
-        redisUrl = `redis://:${redisPassword}@${redisHost}:${redisPort}`;
-      } else {
-        redisUrl = `redis://${redisHost}:${redisPort}`;
-      }
-    }
-    
     redisClient = redis.createClient({
-      url: redisUrl,
-      password: process.env.REDIS_PASSWORD,
+      url: process.env.REDIS_URL || 'redis://redis:6379',
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {

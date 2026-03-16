@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
 
 // Initialize Stripe only if secret key is provided
 let stripe = null;
@@ -21,41 +20,28 @@ const { User, UserPackage, Package } = require('../models');
 // REMOVED: Test email endpoint for security reasons
 // Exposed email configuration details. Use server-side logging for debugging instead.
 
-// Create Stripe Checkout Session (works with or without login; guest provides email)
-router.post('/create-checkout-session', async (req, res) => {
+// Create Stripe Checkout Session
+router.post('/create-checkout-session', authenticateToken, async (req, res) => {
   try {
-    const { packageId, packageName, buyerName, buyerEmail } = req.body;
+    const { packageId, packageName } = req.body;
+    
+    console.log('Payment request received:', { packageId, packageName, userId: req.user.id });
     
     if (!packageName) {
+      console.log('Package name missing in request');
       return res.status(400).json({
         success: false,
         message: 'Package name is required'
       });
     }
-    if (!buyerEmail || typeof buyerEmail !== 'string' || !buyerEmail.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-    const email = buyerEmail.trim().toLowerCase();
-    const name = (buyerName && typeof buyerName === 'string' && buyerName.trim()) ? buyerName.trim() : email;
 
-    // Find or create user by email (guest checkout)
-    let user = await User.findOne({ where: { email } });
+    const user = await User.findByPk(req.user.id);
     if (!user) {
-      const tempPassword = crypto.randomBytes(12).toString('hex'); // 24 chars, satisfies min 8
-      user = await User.create({
-        name: name.length >= 2 ? name : email,
-        email,
-        phone: null,
-        password: tempPassword,
-        user_type: 'student',
-        email_verified: true
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
-      console.log('Guest checkout: created user for', email);
     }
-    console.log('Payment request received:', { packageId, packageName, userId: user.id });
 
     // Validate package exists in database
     let packageDetails;
@@ -173,8 +159,8 @@ router.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-// Confirm payment and create user package (no auth; session metadata identifies user)
-router.post('/confirm-payment', async (req, res) => {
+// Confirm payment and create user package
+router.post('/confirm-payment', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.body;
     
@@ -336,8 +322,8 @@ router.post('/confirm-payment', async (req, res) => {
   }
 });
 
-// Check payment status (no auth; sessionId is sufficient)
-router.get('/check-payment-status/:sessionId', async (req, res) => {
+// Check payment status
+router.get('/check-payment-status/:sessionId', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.params;
     
@@ -392,6 +378,182 @@ router.post('/send-receipt', authenticateToken, async (req, res) => {
       message: 'Failed to send receipt',
       error: error.message
     });
+  }
+});
+
+// ── Guest Payment Routes (no authentication required) ──────────────────────
+
+// Create Stripe Checkout Session for guests
+router.post('/create-guest-checkout-session', async (req, res) => {
+  try {
+    const { packageId, packageName, guestEmail, guestName } = req.body;
+
+    if (!packageName) {
+      return res.status(400).json({ success: false, message: 'Package name is required' });
+    }
+    if (!guestEmail) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    if (!stripe) {
+      return res.status(503).json({ success: false, message: 'Payment service is not configured. Please contact support.' });
+    }
+
+    // Find package by name or ID
+    let packageData = null;
+    if (packageId) {
+      try { packageData = await Package.findByPk(packageId); } catch (_) {}
+    }
+    if (!packageData) {
+      packageData = await Package.findOne({ where: { name: packageName } });
+    }
+    if (!packageData) {
+      return res.status(404).json({ success: false, message: 'Package not found' });
+    }
+
+    const amountInCents = Math.round(packageData.price * 100);
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: guestEmail,
+      line_items: [
+        {
+          price_data: {
+            currency: 'cad',
+            product_data: {
+              name: packageData.name,
+              description: packageData.description || 'Driving lesson package',
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${process.env.FRONTEND_URL}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
+      metadata: {
+        guestEmail,
+        guestName: guestName || '',
+        packageName,
+        packageId: packageId || packageData.id.toString(),
+        isGuest: 'true',
+      },
+    });
+
+    res.json({ success: true, data: { url: session.url, sessionId: session.id } });
+  } catch (error) {
+    console.error('Guest checkout session error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create checkout session', error: error.message });
+  }
+});
+
+// Check payment status for guests (no auth)
+router.get('/check-guest-payment-status/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    if (!stripe) {
+      return res.status(503).json({ success: false, message: 'Payment service is not configured.' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    res.json({
+      success: true,
+      data: {
+        status: session.payment_status,
+        paid: session.payment_status === 'paid',
+      },
+    });
+  } catch (error) {
+    console.error('Guest payment status check error:', error);
+    res.status(500).json({ success: false, message: 'Failed to check payment status', error: error.message });
+  }
+});
+
+// Confirm guest payment and send receipt email (no UserPackage created)
+router.post('/confirm-guest-payment', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: 'Session ID is required' });
+    }
+    if (!stripe) {
+      return res.status(503).json({ success: false, message: 'Payment service is not configured.' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (!session || session.payment_status !== 'paid') {
+      return res.status(400).json({ success: false, message: 'Payment not completed or session not found' });
+    }
+
+    const { guestEmail, guestName, packageName, packageId } = session.metadata || {};
+
+    if (!guestEmail || !packageName) {
+      return res.status(400).json({ success: false, message: 'Invalid session metadata' });
+    }
+
+    // Resolve package details for the receipt
+    let packageDetails = null;
+    if (packageId) {
+      try { packageDetails = await Package.findByPk(packageId); } catch (_) {}
+    }
+    if (!packageDetails) {
+      packageDetails = await Package.findOne({ where: { name: packageName } });
+    }
+
+    const amount = session.amount_total / 100;
+    const lessons = packageDetails ? packageDetails.number_of_lessons : 1;
+
+    // Send receipt email to guest
+    try {
+      const guestUser = { name: guestName || guestEmail, email: guestEmail };
+      await emailService.sendPaymentReceipt(guestUser, {
+        name: packageName,
+        description: packageDetails ? packageDetails.description : 'Driving lesson package',
+        duration: `${lessons} lesson${lessons !== 1 ? 's' : ''}`,
+        price: amount,
+      }, {
+        paymentIntentId: session.payment_intent,
+        amount: session.amount_total,
+      });
+    } catch (emailError) {
+      console.error('Guest receipt email failed:', emailError);
+      // Non-critical — don't fail the response
+    }
+
+    // Notify admin
+    try {
+      const guestUser = { name: guestName || guestEmail, email: guestEmail };
+      await emailService.sendAdminPaymentNotification(guestUser, {
+        name: packageName,
+        description: packageDetails ? packageDetails.description : 'Driving lesson package',
+        duration: `${lessons} lesson${lessons !== 1 ? 's' : ''}`,
+      }, {
+        paymentIntentId: session.payment_intent,
+        amount: session.amount_total,
+      });
+    } catch (emailError) {
+      console.error('Guest admin notification failed:', emailError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Guest payment confirmed successfully',
+      data: {
+        packageName,
+        amount,
+        lessons,
+        guestEmail,
+        transactionId: session.payment_intent,
+      },
+    });
+  } catch (error) {
+    console.error('Guest payment confirmation error:', error);
+    res.status(500).json({ success: false, message: 'Failed to confirm payment', error: error.message });
   }
 });
 
