@@ -1,12 +1,16 @@
 const nodemailer = require('nodemailer');
 const he = require('he');
+// #region agent log
+const fs = require('fs');
+const _debugLog = (data) => { try { fs.appendFileSync('/app/logs/debug.log', JSON.stringify({...data, timestamp: Date.now()}) + '\n'); } catch(e){} };
+// #endregion
 
 class EmailService {
   constructor() {
     // #region agent log
     const constructorUser = process.env.EMAIL_USER;
     const constructorPass = process.env.EMAIL_PASS;
-    fetch('http://127.0.0.1:7243/ingest/ab7b137e-f353-4728-9f3f-afc87ba256b7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'emailService.js:constructor',message:'Transporter init - env var snapshot',hypothesisId:'A+B+C',data:{EMAIL_USER_set:!!constructorUser,EMAIL_USER_value:constructorUser,EMAIL_PASS_set:!!constructorPass,EMAIL_PASS_length:constructorPass?constructorPass.length:0,EMAIL_PASS_charCodes:constructorPass?Array.from(constructorPass).map(c=>c.charCodeAt(0)):[], EMAIL_PASS_trimmed_length:constructorPass?constructorPass.trim().length:0, usingFallback_user:!constructorUser, usingFallback_pass:!constructorPass},timestamp:Date.now()})}).catch(()=>{});
+    _debugLog({location:'emailService.js:constructor',hypothesisId:'A+B+C',message:'Transporter init - env var snapshot',data:{EMAIL_USER_set:!!constructorUser,EMAIL_USER_value:constructorUser,EMAIL_PASS_set:!!constructorPass,EMAIL_PASS_length:constructorPass?constructorPass.length:0,EMAIL_PASS_charCodes:constructorPass?Array.from(constructorPass).map(c=>c.charCodeAt(0)):[],EMAIL_PASS_trimmed_length:constructorPass?constructorPass.trim().length:0,usingFallback_user:!constructorUser,usingFallback_pass:!constructorPass}});
     // #endregion
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -92,7 +96,7 @@ class EmailService {
       // #region agent log
       const transporterAuth = this.transporter.options && this.transporter.options.auth;
       const runtimePass = process.env.EMAIL_PASS;
-      fetch('http://127.0.0.1:7243/ingest/ab7b137e-f353-4728-9f3f-afc87ba256b7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'emailService.js:sendMail',message:'Pre-sendMail credential check',hypothesisId:'A+B+C',data:{transporter_auth_user:transporterAuth?transporterAuth.user:'unknown',transporter_auth_pass_length:transporterAuth&&transporterAuth.pass?transporterAuth.pass.length:0,transporter_auth_pass_matches_env:transporterAuth&&transporterAuth.pass===runtimePass,runtime_EMAIL_PASS_length:runtimePass?runtimePass.length:0,runtime_EMAIL_PASS_charCodes:runtimePass?Array.from(runtimePass).map(c=>c.charCodeAt(0)):[],runtime_EMAIL_USER:process.env.EMAIL_USER},timestamp:Date.now()})}).catch(()=>{});
+      _debugLog({location:'emailService.js:sendMail',hypothesisId:'A+B+C',message:'Pre-sendMail credential check',data:{transporter_auth_user:transporterAuth?transporterAuth.user:'unknown',transporter_auth_pass_length:transporterAuth&&transporterAuth.pass?transporterAuth.pass.length:0,transporter_auth_pass_matches_env:transporterAuth&&transporterAuth.pass===runtimePass,runtime_EMAIL_PASS_length:runtimePass?runtimePass.length:0,runtime_EMAIL_PASS_charCodes:runtimePass?Array.from(runtimePass).map(c=>c.charCodeAt(0)):[],runtime_EMAIL_USER:process.env.EMAIL_USER}});
       // #endregion
       const result = await this.transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully:', result.messageId);
@@ -104,7 +108,7 @@ class EmailService {
       console.error('  Error message:', error.message);
       console.error('  Full error:', error);
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/ab7b137e-f353-4728-9f3f-afc87ba256b7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'emailService.js:sendEmail:catch',message:'SMTP error captured',hypothesisId:'A+B+C+D',data:{error_code:error.code,error_message:error.message,error_command:error.command,error_response:error.response,error_responseCode:error.responseCode,EMAIL_USER_at_error:process.env.EMAIL_USER,EMAIL_PASS_length_at_error:process.env.EMAIL_PASS?process.env.EMAIL_PASS.length:0},timestamp:Date.now()})}).catch(()=>{});
+      _debugLog({location:'emailService.js:sendEmail:catch',hypothesisId:'A+B+C+D',message:'SMTP error captured',data:{error_code:error.code,error_message:error.message,error_command:error.command,error_response:error.response,error_responseCode:error.responseCode,EMAIL_USER_at_error:process.env.EMAIL_USER,EMAIL_PASS_length_at_error:process.env.EMAIL_PASS?process.env.EMAIL_PASS.length:0}});
       // #endregion
       
       // Provide specific error guidance
