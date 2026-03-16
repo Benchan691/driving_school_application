@@ -1,15 +1,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiCalendar, FiClock, FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
-import { useAuth } from '../../context/AuthContext';
+import { FiCheckCircle, FiCalendar, FiClock, FiMail } from 'react-icons/fi';
 import '../../styles/pages/dashboard.scss';
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  const { booking, isNewUser } = location.state || {};
+  const { booking } = location.state || {};
 
   // If no booking data, redirect to booking page
   useEffect(() => {
@@ -145,75 +143,20 @@ const BookingConfirmation = () => {
           </div>
         </div>
 
-        {/* Account Information */}
-        {isNewUser ? (
-          <div className="booking-card" style={{ 
-            background: '#dcfce7',
-            border: '2px solid #16a34a',
-            marginBottom: '1.5rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-              <FiLock size={24} color="#16a34a" />
-              <h3 style={{ margin: 0, color: '#166534' }}>🔐 Your Account Has Been Created</h3>
-            </div>
-            <p style={{ marginBottom: '1rem' }}>
-              We've automatically created an account for you so you can manage your bookings online.
-            </p>
-            <div style={{ 
-              background: 'white',
-              padding: '16px',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <p style={{ margin: '8px 0' }}>
-                <strong>Email:</strong> {booking.user?.email || 'N/A'}
-              </p>
-              <p style={{ margin: '8px 0', fontSize: '14px', color: '#64748b' }}>
-                A temporary password has been sent to your email address.
-              </p>
-            </div>
-            <div style={{ 
-              background: '#fef3c7',
-              border: '1px solid #f59e0b',
-              borderRadius: '6px',
-              padding: '12px',
-              marginBottom: '1rem'
-            }}>
-              <strong>⚠️ Important:</strong> Please check your email for your temporary password 
-              and change it after logging in for security.
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={() => navigate('/login')}
-              style={{ width: '100%' }}
-            >
-              <FiArrowRight style={{ marginRight: '8px' }} />
-              Login to Your Account
-            </button>
+        {/* Confirmation message */}
+        <div className="booking-card" style={{ 
+          background: '#dbeafe',
+          border: '2px solid #2563eb',
+          marginBottom: '1.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
+            <FiMail size={24} color="#2563eb" />
+            <h3 style={{ margin: 0, color: '#1e40af' }}>📧 Check Your Email</h3>
           </div>
-        ) : (
-          <div className="booking-card" style={{ 
-            background: '#dbeafe',
-            border: '2px solid #2563eb',
-            marginBottom: '1.5rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-              <FiMail size={24} color="#2563eb" />
-              <h3 style={{ margin: 0, color: '#1e40af' }}>👋 Welcome Back!</h3>
-            </div>
-            <p style={{ marginBottom: '1rem' }}>
-              Your booking has been added to your existing account. Check your email for confirmation.
-            </p>
-            <button
-              className="btn btn-primary"
-              onClick={() => navigate(user ? '/dashboard' : '/login')}
-              style={{ width: '100%' }}
-            >
-              <FiArrowRight style={{ marginRight: '8px' }} />
-              {user ? 'View Your Bookings' : 'Login to View Bookings'}
-            </button>
-          </div>
-        )}
+          <p style={{ margin: 0 }}>
+            A booking confirmation has been sent to your email address. We'll follow up once your booking is verified by our team.
+          </p>
+        </div>
 
         {/* Next Steps */}
         <div className="booking-card">
@@ -222,9 +165,6 @@ const BookingConfirmation = () => {
             <li>Check your email for booking confirmation</li>
             <li>We'll send you another email once your booking is verified by our team</li>
             <li>If you need to make changes, please contact us as soon as possible</li>
-            {isNewUser && (
-              <li>Login to your account using the credentials sent to your email</li>
-            )}
           </ul>
         </div>
 

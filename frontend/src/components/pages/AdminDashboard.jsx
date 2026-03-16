@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign, FiXCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign, FiXCircle, FiLayers } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import TodayTimetable from '../common/TodayTimetable';
 import PaymentManagement from './PaymentManagement';
+import PackageManagement from './PackageManagement';
 import '../../styles/pages/admin.scss';
 
 const AdminDashboard = () => {
@@ -14,10 +15,9 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, instructor_name: '', notes: '', status: 'scheduled', payment_method: 'Cash' });
+  const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, notes: '', status: 'scheduled' });
 
-  const [view, setView] = useState('bookings'); // bookings | users | contacts | timetable | payments
-  const [users, setUsers] = useState([]);
+  const [view, setView] = useState('bookings'); // bookings | contacts | timetable | payments | packages
   const [contacts, setContacts] = useState([]);
   const [messageModal, setMessageModal] = useState({ open: false, record: null });
   const [replyModal, setReplyModal] = useState({ open: false, record: null });
@@ -30,7 +30,6 @@ const AdminDashboard = () => {
 
   // Filters
   const [bookingFilters, setBookingFilters] = useState({ status: 'all', q: '', dateFrom: '', dateTo: '' });
-  const [userFilters, setUserFilters] = useState({ role: 'all', active: 'all', verified: 'all', q: '' });
   const [contactFilters, setContactFilters] = useState({ status: 'all', q: '' });
 
   // Derived filtered data
@@ -54,15 +53,6 @@ const AdminDashboard = () => {
       return matchStatus && matchQ && matchDate;
     });
   }, [bookings, bookingFilters]);
-
-  const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const matchRole = userFilters.role === 'all' || u.user_type === userFilters.role;
-      const q = userFilters.q.trim().toLowerCase();
-      const matchQ = !q || [u.name || '', u.email || '', String(u.id)].some(v => String(v).toLowerCase().includes(q));
-      return matchRole && matchQ;
-    });
-  }, [users, userFilters]);
 
   const filteredContacts = useMemo(() => {
     return contacts.filter(m => {
@@ -88,11 +78,6 @@ const AdminDashboard = () => {
         if (!res.ok) { const txt = await res.text(); throw new Error(`${res.status} ${res.statusText} - ${txt}`); }
         const data = await res.json();
         setBookings(Array.isArray(data.data) ? data.data : []);
-      } else if (view === 'users') {
-        const resU = await fetch(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!resU.ok) { const txt = await resU.text(); throw new Error(`${resU.status} ${resU.statusText} - ${txt}`); }
-        const dataU = await resU.json();
-        setUsers(Array.isArray(dataU.data) ? dataU.data : []);
       } else if (view === 'contacts') {
         const resC = await fetch(`${API_BASE}/api/contact/admin`, { headers: { Authorization: `Bearer ${token}` } });
         if (!resC.ok) { const txt = await resC.text(); throw new Error(`${resC.status} ${resC.statusText} - ${txt}`); }
@@ -111,36 +96,19 @@ const AdminDashboard = () => {
 
   const startEdit = (b) => {
     setEditing(b.id);
-    setForm({ date: b.date, time: b.time, duration_minutes: b.duration_minutes || 60, instructor_name: b.instructor_name || '', notes: b.notes || '', status: b.status, payment_method: b.payment_method || 'Cash' });
+    setForm({ date: b.date, time: b.time, duration_minutes: b.duration_minutes || 60, notes: b.notes || '', status: b.status });
   };
 
   const saveEdit = async () => {
-    if (String(editing).startsWith('user-')) {
-      const userId = String(editing).replace('user-','');
-      const payload = {
-        name: form.name,
-        email: form.email,
-        user_type: form.user_type,
-      };
-      const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setUsers(prev => prev.map(u => u.id === data.data.id ? data.data : u));
-        setEditing(null);
-      }
-    } else {
-      const res = await fetch(`${API_BASE}/api/admin/bookings/${editing}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setBookings((prev) => prev.map(b => b.id === editing ? data.data : b));
-        setEditing(null);
-      }
+    const res = await fetch(`${API_BASE}/api/admin/bookings/${editing}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(form)
+    });
+    const data = await res.json();
+    if (data?.success) {
+      setBookings((prev) => prev.map(b => b.id === editing ? data.data : b));
+      setEditing(null);
     }
   };
 
@@ -286,10 +254,12 @@ const AdminDashboard = () => {
         <div className="admin-actions" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className={`btn ${view==='bookings' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('bookings')}>Bookings</button>
-            <button className={`btn ${view==='users' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('users')}>Users</button>
             <button className={`btn ${view==='contacts' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('contacts')}>Contacts</button>
             <button className={`btn ${view==='payments' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('payments')}>
               <FiDollarSign /> Payments
+            </button>
+            <button className={`btn ${view==='packages' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('packages')}>
+              <FiLayers /> Packages
             </button>
             <button className={`btn ${view==='timetable' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('timetable')}>
               <FiCalendar /> Lessons Today
@@ -343,11 +313,11 @@ const AdminDashboard = () => {
               <tr>
                 <th>Reference</th>
                 <th>User</th>
+                <th>Email</th>
+                <th>Phone</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>Duration</th>
-                <th>Payment Method</th>
-                <th>Instructor</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -355,7 +325,7 @@ const AdminDashboard = () => {
             <tbody>
               {filteredBookings.length === 0 && !loading && (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
+                  <td colSpan="9" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
                 </tr>
               )}
               {filteredBookings.map(b => {
@@ -384,10 +354,14 @@ const AdminDashboard = () => {
                     </code>
                   </td>
                   <td>
-                    <button className="link" onClick={()=>{ setView('users'); setUsers(prev => prev); }}>
-                      {b.student ? b.student.name : `User #${b.student_id?.slice(0,8)}`}
-                    </button>
+                    {b.student
+                      ? b.student.name
+                      : b.guest_name
+                        ? <>{b.guest_name} <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Guest</span></>
+                        : `User #${b.student_id?.slice(0,8)}`}
                   </td>
+                  <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.email || b.guest_email || '-'}</td>
+                  <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.phone || b.guest_phone || '-'}</td>
                   <td>{editing === b.id ? (
                     <input 
                       type="date" 
@@ -432,50 +406,6 @@ const AdminDashboard = () => {
                       <option value={90}>1.5h</option>
                     </select>
                   ) : `${b.duration_minutes || 60}m`}</td>
-                  <td>
-                    {editing === b.id ? (
-                      <select 
-                        value={form.payment_method} 
-                        onChange={(e)=>setForm({...form, payment_method: e.target.value})}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          border: '2px solid #e5e7eb',
-                          fontSize: '13px',
-                          fontWeight: '500'
-                        }}
-                      >
-                        <option value="Cash">Cash</option>
-                        <option value="Paid Online">Paid Online</option>
-                      </select>
-                    ) : (
-                      <span style={{ 
-                        background: b.payment_method === 'Paid Online' ? '#10b981' : '#f59e0b', 
-                        color: 'white', 
-                        padding: '4px 10px', 
-                        borderRadius: '12px', 
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        display: 'inline-block'
-                      }}>
-                        {b.payment_method || 'Cash'}
-                      </span>
-                    )}
-                  </td>
-                  <td>{editing === b.id ? (
-                    <input 
-                      type="text" 
-                      value={form.instructor_name} 
-                      onChange={(e)=>setForm({...form, instructor_name: e.target.value})}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        border: '2px solid #e5e7eb',
-                        fontSize: '13px',
-                        fontWeight: '500'
-                      }}
-                    />
-                  ) : (b.instructor_name || '-')}</td>
                   <td>{editing === b.id ? (
                     <select 
                       value={form.status} 
@@ -581,98 +511,6 @@ const AdminDashboard = () => {
         </div>
         )}
 
-        {view === 'users' && (
-        <div className="table-card" style={{ marginTop: 12 }}>
-          <div className="table-filters" style={{ display:'flex', gap:8, padding: '8px 8px 0 8px', flexWrap:'wrap' }}>
-            <select value={userFilters.role} onChange={(e)=>setUserFilters({ ...userFilters, role: e.target.value })}>
-              <option value="all">All roles</option>
-              <option value="student">student</option>
-              <option value="instructor">instructor</option>
-              <option value="admin">admin</option>
-            </select>
-            <input className="input" placeholder="Search name/email/id" value={userFilters.q} onChange={(e)=>setUserFilters({ ...userFilters, q: e.target.value })} />
-          </div>
-          <div className="table-responsive">
-            <table className="table table--styled table--admin">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length === 0 && !loading && (
-                  <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: '#64748b' }}>No users found.</td>
-                  </tr>
-                )}
-                {filteredUsers.map((u, index) => {
-                  const isEditing = editing === `user-${u.id}`;
-                  return (
-                  <tr key={u.id}>
-                    <td>{index + 1}</td>
-                    <td>
-                      {isEditing ? (
-                        <input className="input" type="text" value={form.name} onChange={(e)=>setForm({...form, name: e.target.value})} placeholder="Full Name" />
-                      ) : (
-                        <>{u.name || 'N/A'}</>
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input className="input" type="email" value={form.email} onChange={(e)=>setForm({...form, email: e.target.value})} />
-                      ) : u.email}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <select className="input" value={form.user_type} onChange={(e)=>setForm({...form, user_type: e.target.value})}>
-                          <option value="student">student</option>
-                          <option value="instructor">instructor</option>
-                          <option value="admin">admin</option>
-                        </select>
-                      ) : u.user_type}
-                    </td>
-                    <td>{new Date(u.createdAt || u.created_at).toLocaleDateString()}</td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      {isEditing ? (
-                        <button className="btn btn-sm btn-primary" onClick={saveEdit} title="Save">
-                          <FiSave />
-                        </button>
-                      ) : (
-                        <>
-                          <button className="btn btn-sm btn-outline" onClick={()=>{
-                            setEditing(`user-${u.id}`);
-                            setForm({
-                              date: '', time: '', duration_minutes: 60, instructor_name: '', notes: '', status: 'scheduled',
-                              name: u.name || '',
-                              email: u.email,
-                              user_type: u.user_type,
-                            });
-                          }} title="Edit">
-                            <FiEdit3 />
-                          </button>
-                          <button className="btn btn-sm btn-ghost" onClick={async()=>{
-                            if (!window.confirm('Delete this user?')) return;
-                            const res = await fetch(`${API_BASE}/api/admin/users/${u.id}`, { method:'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                            const data = await res.json();
-                            if (data?.success) setUsers(prev => prev.filter(x => x.id !== u.id));
-                          }} title="Delete">
-                            <FiTrash2 />
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        )}
 
         {view === 'contacts' && (
         <div className="table-card" style={{ marginTop: 12 }}>
@@ -764,6 +602,10 @@ const AdminDashboard = () => {
 
         {view === 'payments' && (
           <PaymentManagement />
+        )}
+
+        {view === 'packages' && (
+          <PackageManagement token={token} />
         )}
 
         {view === 'timetable' && (

@@ -12,14 +12,16 @@ const PaymentModal = ({ isOpen, onClose, packageData, onSuccess }) => {
   const handlePaymentSuccess = (result) => {
     setPaymentResult(result);
     setPaymentStep('success');
-    
-    // Auto close after 5 seconds to give user time to see success
-    setTimeout(() => {
-      onSuccess(result);
-      onClose();
-      setPaymentStep('form');
-      setPaymentResult(null);
-    }, 5000);
+
+    if (!result?.isGuest) {
+      // Auto close after 5 seconds for authenticated users
+      setTimeout(() => {
+        onSuccess(result);
+        onClose();
+        setPaymentStep('form');
+        setPaymentResult(null);
+      }, 5000);
+    }
   };
 
   const handlePaymentError = (error) => {
@@ -100,16 +102,8 @@ const PaymentModal = ({ isOpen, onClose, packageData, onSuccess }) => {
               <div className="package-pricing">
                 <div className="price-display">
                   <span className="current-price">${packageData.price}</span>
-                  {packageData.originalPrice > packageData.price && (
-                    <span className="original-price">${packageData.originalPrice}</span>
-                  )}
                 </div>
                 <div className="duration">{packageData.duration}</div>
-                {packageData.originalPrice > packageData.price && (
-                  <div className="savings">
-                    Save ${packageData.originalPrice - packageData.price}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -165,21 +159,42 @@ const PaymentModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                       </div>
                     )}
                   </div>
-                  <p className="redirect-notice">
-                    Redirecting to your dashboard...
-                  </p>
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={() => {
-                      onSuccess(paymentResult);
-                      onClose();
-                      setPaymentStep('form');
-                      setPaymentResult(null);
-                    }}
-                    style={{ marginTop: '16px' }}
-                  >
-                    Continue to Dashboard
-                  </button>
+                  {paymentResult?.isGuest ? (
+                    <>
+                      <p className="redirect-notice">
+                        A receipt has been sent to <strong>{paymentResult.guestEmail}</strong>.
+                      </p>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          onClose();
+                          setPaymentStep('form');
+                          setPaymentResult(null);
+                        }}
+                        style={{ marginTop: '16px' }}
+                      >
+                        Done
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="redirect-notice">
+                        Redirecting to your dashboard...
+                      </p>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          onSuccess(paymentResult);
+                          onClose();
+                          setPaymentStep('form');
+                          setPaymentResult(null);
+                        }}
+                        style={{ marginTop: '16px' }}
+                      >
+                        Continue to Dashboard
+                      </button>
+                    </>
+                  )}
                 </motion.div>
               )}
 

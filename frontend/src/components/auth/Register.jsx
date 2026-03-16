@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,7 +16,9 @@ const Register = () => {
   const {
     register,
     handleSubmit,
+    getValues,
     watch,
+    trigger,
     formState: { errors },
     setError
   } = useForm({
@@ -27,31 +29,21 @@ const Register = () => {
 
   const watchedPassword = watch('password');
 
+  // Re-validate confirm_password whenever the password field changes
+  useEffect(() => {
+    if (getValues('confirm_password')) {
+      trigger('confirm_password');
+    }
+  }, [watchedPassword, trigger, getValues]);
+
   const onSubmit = async (data) => {
     setIsLoading(true);
     
     try {
-      // Split name into first_name and last_name
-      const nameParts = (data.name || '').trim().split(/\s+/).filter(part => part.length > 0);
-      let first_name = nameParts[0] || '';
-      let last_name = nameParts.slice(1).join(' ') || '';
-      
-      // If only one name provided, use it as first_name and duplicate as last_name
-      // (backend requires both fields, minimum 2 chars each)
-      if (!last_name && first_name.length >= 2) {
-        last_name = first_name;
-      }
-      
-      // Prepare registration data
-      const registrationData = {
-        ...data,
-        first_name,
-        last_name
-      };
-      // Remove the 'name' field as backend expects first_name and last_name
-      delete registrationData.name;
-      delete registrationData.confirm_password; // Remove confirm_password as backend doesn't need it
-      
+      // Prepare registration data — backend uses `name` directly
+      // confirm_password is kept so the backend validator can compare it against password
+      const registrationData = { ...data };
+
       const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: {
@@ -75,6 +67,8 @@ const Register = () => {
       } else {
         if (result.errors) {
           result.errors.forEach(error => {
+            // confirm_password is validated on the frontend; ignore any backend error for it
+            if (error.path === 'confirm_password') return;
             setError(error.path, {
               type: 'manual',
               message: error.message
@@ -138,22 +132,10 @@ const Register = () => {
                 placeholder="Enter your full name"
                 {...register('name', {
                   required: 'Full name is required',
-                  minLength: {
-                    value: 2,
-                    message: 'Name must be at least 2 characters'
-                  },
-                  pattern: {
-                    value: /^[a-zA-Z\s\-']+$/,
-                    message: 'Name can only contain letters, spaces, hyphens, and apostrophes'
-                  },
-                  validate: {
-                    minLength: (value) => {
-                      const trimmed = value.trim();
-                      if (trimmed.length < 2) {
-                        return 'Name must be at least 2 characters';
-                      }
-                      return true;
-                    }
+                  validate: (value) => {
+                    const trimmed = value.trim();
+                    if (trimmed.length < 2) return 'Name must be at least 2 characters';
+                    return true;
                   }
                 })}
                 className={errors.name ? 'error' : ''}
@@ -256,7 +238,10 @@ const Register = () => {
                 placeholder="Confirm your password"
                 {...register('confirm_password', {
                   required: 'Please confirm your password',
-                  validate: (value) => value === watchedPassword || 'Passwords do not match'
+                  validate: (value) => {
+                    const pwd = getValues('password');
+                    return value === pwd || 'Passwords do not match';
+                  }
                 })}
                 className={errors.confirm_password ? 'error' : ''}
               />

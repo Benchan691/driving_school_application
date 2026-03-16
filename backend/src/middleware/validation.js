@@ -65,8 +65,6 @@ const validateRegistration = [
     .trim()
     .isLength({ min: 2, max: 200 })
     .withMessage('Name must be between 2 and 200 characters')
-    .matches(/^[a-zA-Z\s\-']+$/)
-    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes')
     .escape(),
   
   body('email')
@@ -215,8 +213,6 @@ const validateContact = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s\-']+$/)
-    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes')
     .escape(),
   
   body('email')
@@ -245,8 +241,6 @@ const validateGuestBooking = [
     .withMessage('Name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s\-']+$/)
-    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes')
     .escape(),
   
   body('email')

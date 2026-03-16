@@ -39,11 +39,7 @@ const Header = () => {
             <Link to="/book" className="nav-link" onClick={scrollToTop} style={{display: 'inline-block'}}>Book a Lesson</Link>
             <Link to="/contact" className="nav-link" onClick={scrollToTop}>Contact</Link>
             {isAuthenticated && (
-              user?.user_type === 'admin' ? (
-                <Link to="/dashboard/admin" className="nav-link">Admin</Link>
-              ) : (
-                <Link to="/dashboard" className="nav-link">Dashboard</Link>
-              )
+              <Link to="/dashboard/admin" className="nav-link">Admin</Link>
             )}
           </nav>
 
@@ -64,7 +60,6 @@ const Header = () => {
             ) : (
               <div className="auth-buttons">
                 <Link to="/login" className="btn btn-outline">Login</Link>
-                <Link to="/register" className="btn btn-primary">Sign Up</Link>
               </div>
             )}
           </div>
@@ -87,7 +82,7 @@ const Header = () => {
             
             {isAuthenticated ? (
               <div className="mobile-auth">
-                <Link to={user?.user_type === 'admin' ? '/dashboard/admin' : '/dashboard'} className="nav-link" onClick={toggleMenu}>{user?.user_type === 'admin' ? 'Admin' : 'Dashboard'}</Link>
+                <Link to="/dashboard/admin" className="nav-link" onClick={toggleMenu}>Admin</Link>
                 
                 <button onClick={handleLogout} className="logout-btn-mobile">
                   <FiLogOut />
@@ -97,7 +92,6 @@ const Header = () => {
             ) : (
               <div className="mobile-auth">
                 <Link to="/login" className="nav-link" onClick={toggleMenu}>Login</Link>
-                <Link to="/register" className="nav-link" onClick={toggleMenu}>Sign Up</Link>
               </div>
             )}
           </nav>

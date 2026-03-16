@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -11,7 +11,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
 
   const {
@@ -21,8 +20,6 @@ const Login = () => {
     setError
   } = useForm();
 
-  const from = location.state?.from?.pathname || '/dashboard';
-
   const onSubmit = async (data) => {
     setIsLoading(true);
     
@@ -30,9 +27,7 @@ const Login = () => {
       const result = await login(data.email, data.password);
       if (result.success) {
         toast.success('Login successful! Welcome back!');
-        const storedUser = (() => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } })();
-        const dest = storedUser?.user_type === 'admin' ? '/dashboard/admin' : from;
-        navigate(dest, { replace: true });
+        navigate('/dashboard/admin', { replace: true });
       } else {
         setError('root', { type: 'manual', message: result.error || 'Login failed. Please try again.' });
         toast.error(result.error || 'Login failed');
@@ -152,12 +147,6 @@ const Login = () => {
         </form>
 
         <div className="auth-footer">
-          <p>
-            Don't have an account?{' '}
-            <Link to="/register" className="auth-link">
-              Sign up here
-            </Link>
-          </p>
           <p>
             <Link to="/forgot-password" className="auth-link">
               Forgot your password?

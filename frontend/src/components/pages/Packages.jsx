@@ -88,29 +88,15 @@ const Packages = () => {
   const packagesWithIcons = packages.map(p => ({ ...p, IconComponent: iconMap[p.icon] || FiTruck }));
 
   const handlePurchaseClick = (packageData) => {
-    if (!isAuthenticated) {
-      toast.error('Please log in to purchase a package', {
-        duration: 3000,
-        action: {
-          label: 'Login',
-          onClick: () => navigate('/login')
-        }
-      });
-      // Optionally redirect to login after a short delay
-      setTimeout(() => {
-        navigate('/login', { state: { returnTo: '/packages' } });
-      }, 1500);
-      return;
-    }
-    
-    console.log('Opening payment modal for package:', packageData);
     setSelectedPackage(packageData);
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = (paymentIntent) => {
+  const handlePaymentSuccess = (result) => {
     toast.success('Payment successful! Your package has been purchased.');
-    // You can redirect to dashboard or show success message
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
   };
 
   const handleCloseModal = () => {
@@ -173,12 +159,8 @@ const Packages = () => {
                 <div className="package-pricing">
                   <div className="price-container">
                     <span className="current-price">${pkg.price}</span>
-                    <span className="original-price">${pkg.originalPrice}</span>
                   </div>
                   <p className="duration">{pkg.duration}</p>
-                  <div className="savings">
-                    Save ${pkg.originalPrice - pkg.price}
-                  </div>
                 </div>
 
                 <div className="package-features">
@@ -194,24 +176,13 @@ const Packages = () => {
                 </div>
 
                 <div className="package-actions">
-                  {isAuthenticated ? (
-                    <button
-                      onClick={() => handlePurchaseClick(pkg)}
-                      className="btn btn-primary btn-full"
-                    >
-                      <FiCreditCard />
-                      Purchase Now - ${pkg.price}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handlePurchaseClick(pkg)}
-                      className="btn btn-primary btn-full"
-                      title="Login required to purchase"
-                    >
-                      <FiCreditCard />
-                      Login to Purchase - ${pkg.price}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handlePurchaseClick(pkg)}
+                    className="btn btn-primary btn-full"
+                  >
+                    <FiCreditCard />
+                    Purchase Now - ${pkg.price}
+                  </button>
                   <Link to="/contact" className="btn btn-outline btn-full" onClick={scrollToTop}>
                     Ask Questions
                   </Link>

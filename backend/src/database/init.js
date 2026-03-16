@@ -6,6 +6,27 @@ const ContactMessage = require('../models/ContactMessage');
 const Package = require('../models/Package');
 const UserPackage = require('../models/UserPackage');
 
+// Idempotent migrations — safe to run on every startup
+const runMigrations = async (seq) => {
+  // Make student_id nullable (was NOT NULL in original schema)
+  await seq.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'bookings' AND column_name = 'student_id' AND is_nullable = 'NO'
+      ) THEN
+        ALTER TABLE bookings ALTER COLUMN student_id DROP NOT NULL;
+      END IF;
+    END $$;
+  `);
+
+  // Add guest columns if they don't already exist
+  await seq.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_name VARCHAR(200);`);
+  await seq.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255);`);
+  await seq.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_phone VARCHAR(30);`);
+};
+
 const initDatabase = async () => {
   try {
     // Test connection
@@ -34,6 +55,10 @@ const initDatabase = async () => {
     // Using alter: false to avoid conflicts with existing database schema
     await sequelize.sync({ alter: false, force: false });
     console.log('✅ Database synchronized successfully');
+
+    // Apply incremental schema migrations
+    await runMigrations(sequelize);
+    console.log('✅ Schema migrations applied');
 
     // Create admin user if it doesn't exist and ADMIN_EMAIL is configured
     const adminEmail = process.env.ADMIN_EMAIL;

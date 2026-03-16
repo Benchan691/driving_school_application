@@ -3,8 +3,11 @@ const he = require('he');
 
 class EmailService {
   constructor() {
-    // Create transporter - using Gmail for development
-    // In production, you should use a proper email service like SendGrid, AWS SES, etc.
+    // #region agent log
+    const constructorUser = process.env.EMAIL_USER;
+    const constructorPass = process.env.EMAIL_PASS;
+    fetch('http://127.0.0.1:7243/ingest/ab7b137e-f353-4728-9f3f-afc87ba256b7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'emailService.js:constructor',message:'Transporter init - env var snapshot',hypothesisId:'A+B+C',data:{EMAIL_USER_set:!!constructorUser,EMAIL_USER_value:constructorUser,EMAIL_PASS_set:!!constructorPass,EMAIL_PASS_length:constructorPass?constructorPass.length:0,EMAIL_PASS_charCodes:constructorPass?Array.from(constructorPass).map(c=>c.charCodeAt(0)):[], EMAIL_PASS_trimmed_length:constructorPass?constructorPass.trim().length:0, usingFallback_user:!constructorUser, usingFallback_pass:!constructorPass},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -86,6 +89,11 @@ class EmailService {
       };
 
       console.log('📤 Attempting to send email...');
+      // #region agent log
+      const transporterAuth = this.transporter.options && this.transporter.options.auth;
+      const runtimePass = process.env.EMAIL_PASS;
+      fetch('http://127.0.0.1:7243/ingest/ab7b137e-f353-4728-9f3f-afc87ba256b7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'emailService.js:sendMail',message:'Pre-sendMail credential check',hypothesisId:'A+B+C',data:{transporter_auth_user:transporterAuth?transporterAuth.user:'unknown',transporter_auth_pass_length:transporterAuth&&transporterAuth.pass?transporterAuth.pass.length:0,transporter_auth_pass_matches_env:transporterAuth&&transporterAuth.pass===runtimePass,runtime_EMAIL_PASS_length:runtimePass?runtimePass.length:0,runtime_EMAIL_PASS_charCodes:runtimePass?Array.from(runtimePass).map(c=>c.charCodeAt(0)):[],runtime_EMAIL_USER:process.env.EMAIL_USER},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       const result = await this.transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully:', result.messageId);
       console.log('📧 Email response:', result.response);
@@ -95,6 +103,9 @@ class EmailService {
       console.error('  Error code:', error.code);
       console.error('  Error message:', error.message);
       console.error('  Full error:', error);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ab7b137e-f353-4728-9f3f-afc87ba256b7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'emailService.js:sendEmail:catch',message:'SMTP error captured',hypothesisId:'A+B+C+D',data:{error_code:error.code,error_message:error.message,error_command:error.command,error_response:error.response,error_responseCode:error.responseCode,EMAIL_USER_at_error:process.env.EMAIL_USER,EMAIL_PASS_length_at_error:process.env.EMAIL_PASS?process.env.EMAIL_PASS.length:0},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       
       // Provide specific error guidance
       if (error.code === 'EAUTH') {
@@ -1460,20 +1471,10 @@ This is an automated notification.
     );
   }
 
-  async sendGuestBookingConfirmationEmail(user, booking, isNewUser, temporaryPassword) {
-    // Validate parameters
-    if (!user || !booking) {
-      console.error('sendGuestBookingConfirmationEmail: Missing required parameters', { user: !!user, booking: !!booking });
+  async sendGuestBookingConfirmationEmail(guest, booking) {
+    if (!guest || !booking) {
       throw new Error('Missing required parameters for guest booking confirmation email');
     }
-
-    // Log for debugging
-    console.log('📧 Sending guest booking confirmation email:', {
-      userEmail: user.email,
-      isNewUser,
-      hasTemporaryPassword: !!temporaryPassword,
-      temporaryPasswordLength: temporaryPassword ? temporaryPassword.length : 0
-    });
 
     const bookingDate = new Date(booking.lesson_date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -1481,47 +1482,14 @@ This is an automated notification.
       day: 'numeric'
     });
     const bookingTime = booking.start_time;
-    const duration = booking.end_time ? 
+    const duration = booking.end_time ?
       (() => {
         const [startH, startM] = booking.start_time.split(':').map(Number);
         const [endH, endM] = booking.end_time.split(':').map(Number);
-        const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
-        const diffMinutes = endMinutes - startMinutes;
+        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
         return diffMinutes === 90 ? '1.5 hours' : '1 hour';
       })() : '1 hour';
     const bookingReference = booking.id;
-
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost'}/login`;
-    console.log('🔗 Login URL for email:', loginUrl);
-    
-    // Ensure temporaryPassword is provided for new users
-    if (isNewUser && !temporaryPassword) {
-      console.warn('⚠️ Warning: isNewUser is true but temporaryPassword is missing. Account info section will not include password.');
-    }
-    
-    const accountInfoSection = isNewUser ? `
-      <div style="background: #dcfce7; border: 2px solid #16a34a; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3 style="margin-top: 0; color: #166534;">🔐 Your Account Has Been Created</h3>
-        <p>We've automatically created an account for you so you can manage your bookings online.</p>
-        <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
-          <p style="margin: 5px 0;"><strong>Email Address:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${this.escapeHtml(user.email)}</code></p>
-          ${temporaryPassword ? `
-          <p style="margin: 5px 0;"><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 16px; letter-spacing: 1px; font-weight: bold; color: #166534;">${this.escapeHtml(temporaryPassword)}</code></p>
-          ` : `
-          <p style="margin: 5px 0; color: #dc2626;"><strong>⚠️ Password not set:</strong> Please use the "Forgot Password" feature to set your password.</p>
-          `}
-        </div>
-        <p><strong>⚠️ Important:</strong> Please change your password after logging in for security.</p>
-        <a href="${this.sanitizeUrl(loginUrl)}" style="display: inline-block; background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">Login to Your Account</a>
-      </div>
-    ` : `
-      <div style="background: #dbeafe; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3 style="margin-top: 0; color: #1e40af;">👋 Welcome Back!</h3>
-        <p>Your booking has been added to your existing account.</p>
-        <a href="${this.sanitizeUrl(loginUrl)}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Your Bookings</a>
-      </div>
-    `;
 
     const html = `
       <!DOCTYPE html>
@@ -1626,7 +1594,7 @@ This is an automated notification.
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Your lesson has been scheduled</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(guest.name?.split(' ')[0] || 'there')},</p>
             <p>Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.</p>
             
             <div class="reference-box">
@@ -1662,12 +1630,10 @@ This is an automated notification.
             
             <div class="status-pending">
               ⏳ <strong>Status: Pending Verification</strong><br>
-              Please check your email for confirmation once your booking is verified by our team.
+              We'll send you another email once your booking is confirmed by our team.
             </div>
             
-            ${accountInfoSection}
-            
-            <p>We'll send you another email once your booking is confirmed. If you need to make any changes, please contact us as soon as possible.</p>
+            <p>If you need to make any changes or have questions, please contact us as soon as possible.</p>
             <p>Thank you for choosing The Truth Driving School!</p>
           </div>
           <div class="footer">
@@ -1682,7 +1648,7 @@ This is an automated notification.
     const text = `
 📅 Booking Confirmation - Your lesson has been scheduled
 
-Hello ${user.first_name},
+Hello ${this.escapeHtml(guest.name?.split(' ')[0] || 'there')},
 
 Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.
 
@@ -1696,26 +1662,9 @@ Status: Pending Verification
 ${booking.notes ? `Notes: ${booking.notes}` : ''}
 
 ⏳ Status: Pending Verification
-Please check your email for confirmation once your booking is verified by our team.
+We'll send you another email once your booking is confirmed by our team.
 
-${isNewUser ? `
-🔐 Your Account Has Been Created
-We've automatically created an account for you so you can manage your bookings online.
-
-Email Address: ${user.email}
-${temporaryPassword ? `Temporary Password: ${temporaryPassword}` : '⚠️ Password not set: Please use the "Forgot Password" feature to set your password.'}
-
-⚠️ Important: Please change your password after logging in for security.
-
-Login to your account: ${loginUrl}
-` : `
-👋 Welcome Back!
-Your booking has been added to your existing account.
-
-View your bookings: ${loginUrl}
-`}
-
-We'll send you another email once your booking is confirmed. If you need to make any changes, please contact us as soon as possible.
+If you need to make any changes or have questions, please contact us as soon as possible.
 
 Thank you for choosing The Truth Driving School!
 
@@ -1724,7 +1673,7 @@ Phone: +1 (604) 773 8906 | Email: thetruthdrivingschool@gmail.com
     `;
 
     return await this.sendEmail(
-      user.email,
+      guest.email,
       'Booking Confirmation - The Truth Driving School',
       html,
       text

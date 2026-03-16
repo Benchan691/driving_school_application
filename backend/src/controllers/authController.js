@@ -105,6 +105,14 @@ class AuthController {
         });
       }
 
+      // Restrict login to admin users only
+      if (user.user_type !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin login only.'
+        });
+      }
+
       // Generate tokens
       const { accessToken, refreshToken } = generateTokens(user);
 

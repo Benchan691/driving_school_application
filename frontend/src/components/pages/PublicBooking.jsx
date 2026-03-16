@@ -465,30 +465,9 @@ const PublicBooking = () => {
                 </div>
               </div>
 
-              <div style={{ 
-                background: '#fef3c7', 
-                border: '1px solid #f59e0b', 
-                borderRadius: '8px', 
-                padding: '12px', 
-                marginBottom: '16px',
-                fontSize: '13px',
-                color: '#92400e'
-              }}>
-                ℹ️ <strong>Note:</strong> If you don't have an account, we'll create one for you automatically. 
-                You'll receive login credentials via email.
-              </div>
-
               <div className="actions">
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
                   {submitting ? 'Booking...' : 'Book Lesson'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => navigate('/login')}
-                  style={{ marginLeft: '12px' }}
-                >
-                  Already have an account? Login
                 </button>
               </div>
             </form>
