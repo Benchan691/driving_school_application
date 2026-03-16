@@ -1,0 +1,20 @@
+tunnel: ff6a6005-492d-4b90-b182-f8a073db6ec0
+credentials-file: /Users/alextruong/.cloudflared/ff6a6005-492d-4b90-b182-f8a073db6ec0.json
+
+ingress:
+  # API requests go through nginx (which proxies to backend)
+  - hostname: thetruthdrivingschool.ca
+    path: ^/api/.*
+    service: http://localhost:80
+  
+  # Main website
+  - hostname: thetruthdrivingschool.ca
+    service: http://localhost:80
+  
+  # WWW subdomain
+  - hostname: www.thetruthdrivingschool.ca
+    service: http://localhost:80
+  
+  # Catch-all rule (required)
+  - service: http_status:404
+

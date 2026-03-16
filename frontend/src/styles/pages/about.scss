@@ -1,0 +1,543 @@
+// About Us Page Styles
+
+.about-page {
+  min-height: 100vh;
+  padding-top: 4rem; // Account for fixed header
+
+  // Hero Section
+  .about-hero {
+    padding: $spacing-20 0 $spacing-16;
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="about-grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="%23e6f3ff" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23about-grid)"/></svg>');
+      opacity: 0.3;
+      z-index: 1;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-content {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+
+      h1 {
+        font-size: $font-size-5xl;
+        font-weight: $font-weight-extrabold;
+        color: $text-primary;
+        margin-bottom: $spacing-6;
+        line-height: $line-height-tight;
+
+        @media (max-width: $breakpoint-md) {
+          font-size: $font-size-4xl;
+        }
+
+        @media (max-width: $breakpoint-sm) {
+          font-size: $font-size-3xl;
+        }
+      }
+
+      .hero-subtitle {
+        font-size: $font-size-lg;
+        color: $text-secondary;
+        margin-bottom: $spacing-8;
+        line-height: $line-height-relaxed;
+      }
+
+      .hero-buttons {
+        display: flex;
+        gap: $spacing-4;
+        justify-content: center;
+        flex-wrap: wrap;
+
+        .btn {
+          padding: $spacing-4 $spacing-8;
+          font-size: $font-size-lg;
+          font-weight: $font-weight-semibold;
+          border-radius: $border-radius-xl;
+          transition: all $transition-base;
+
+          &.btn-primary {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            border: none;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+            }
+          }
+
+          &.btn-outline {
+            background: transparent;
+            border: 2px solid #2563eb;
+            color: #2563eb;
+
+            &:hover {
+              background: #2563eb;
+              color: white;
+              transform: translateY(-2px);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Stats Section
+  .stats-section {
+    padding: $spacing-16 0;
+    background: $bg-primary;
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: $spacing-8;
+
+      @media (max-width: $breakpoint-lg) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (max-width: $breakpoint-md) {
+        grid-template-columns: 1fr;
+        gap: $spacing-6;
+      }
+
+      .stat-card {
+        text-align: center;
+        padding: $spacing-8;
+        background: $bg-primary;
+        border-radius: $border-radius-2xl;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.1);
+        transition: all $transition-base;
+
+        &:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 40px rgba(37, 99, 235, 0.15);
+        }
+
+        .stat-icon {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto $spacing-4;
+          color: #2563eb;
+          font-size: $font-size-2xl;
+          box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+        }
+
+        .stat-value {
+          font-size: $font-size-4xl;
+          font-weight: $font-weight-extrabold;
+          color: #2563eb;
+          margin-bottom: $spacing-2;
+        }
+
+        .stat-label {
+          font-size: $font-size-lg;
+          color: $text-secondary;
+          font-weight: $font-weight-medium;
+        }
+      }
+    }
+  }
+
+  // Mission Section
+  .mission-section {
+    padding: $spacing-20 0;
+    background: linear-gradient(135deg, #f8faff 0%, #f0f8ff 100%);
+
+    .mission-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: $spacing-16;
+      align-items: center;
+
+      @media (max-width: $breakpoint-lg) {
+        grid-template-columns: 1fr;
+        gap: $spacing-12;
+      }
+
+      .mission-content {
+        h2 {
+          font-size: $font-size-4xl;
+          font-weight: $font-weight-extrabold;
+          color: $text-primary;
+          margin-bottom: $spacing-6;
+
+          @media (max-width: $breakpoint-md) {
+            font-size: $font-size-3xl;
+          }
+        }
+
+        .mission-text {
+          font-size: $font-size-lg;
+          color: $text-secondary;
+          line-height: $line-height-relaxed;
+          margin-bottom: $spacing-6;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+
+      .mission-image {
+        display: flex;
+        justify-content: center;
+
+        .image-placeholder {
+          width: 100%;
+          max-width: 400px;
+          height: 300px;
+          background: linear-gradient(135deg, #2563eb, #3b82f6);
+          border-radius: $border-radius-3xl;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 20px 40px rgba(30, 64, 175, 0.25);
+
+          .instructor-demo {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: $spacing-8;
+
+            .instructor {
+              text-align: center;
+              color: white;
+
+              .person {
+                font-size: 64px;
+                margin-bottom: $spacing-4;
+              }
+
+              .instructor-info {
+                h4 {
+                  font-size: $font-size-xl;
+                  margin-bottom: $spacing-2;
+                }
+
+                p {
+                  font-size: $font-size-base;
+                  opacity: 0.9;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Team Section
+  .team-section {
+    padding: $spacing-20 0;
+    background: $bg-primary;
+
+    .section-header {
+      text-align: center;
+      margin-bottom: $spacing-16;
+
+      h2 {
+        font-size: $font-size-4xl;
+        font-weight: $font-weight-extrabold;
+        color: $text-primary;
+        margin-bottom: $spacing-4;
+      }
+
+      p {
+        font-size: $font-size-lg;
+        color: $text-secondary;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: $spacing-8;
+
+      @media (max-width: $breakpoint-lg) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (max-width: $breakpoint-md) {
+        grid-template-columns: 1fr;
+      }
+
+      .team-card {
+        background: $bg-primary;
+        border-radius: $border-radius-2xl;
+        padding: $spacing-8;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.1);
+        transition: all $transition-base;
+
+        &:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 40px rgba(37, 99, 235, 0.15);
+        }
+
+        .team-avatar {
+          width: 100px;
+          height: 100px;
+          background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto $spacing-6;
+          font-size: 48px;
+          box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+        }
+
+        h3 {
+          font-size: $font-size-xl;
+          font-weight: $font-weight-bold;
+          color: $text-primary;
+          margin-bottom: $spacing-2;
+        }
+
+        .team-role {
+          font-size: $font-size-lg;
+          color: #2563eb;
+          font-weight: $font-weight-semibold;
+          margin-bottom: $spacing-2;
+        }
+
+        .team-experience {
+          font-size: $font-size-sm;
+          color: $text-secondary;
+          margin-bottom: $spacing-6;
+        }
+
+        .team-specialties {
+          display: flex;
+          flex-wrap: wrap;
+          gap: $spacing-2;
+          justify-content: center;
+
+          .specialty-tag {
+            background: rgba(37, 99, 235, 0.1);
+            color: #2563eb;
+            padding: $spacing-1 $spacing-3;
+            border-radius: $border-radius-full;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+          }
+        }
+      }
+    }
+  }
+
+  // Values Section
+  .values-section {
+    padding: $spacing-20 0;
+    background: linear-gradient(135deg, #f8faff 0%, #f0f8ff 100%);
+
+    .section-header {
+      text-align: center;
+      margin-bottom: $spacing-16;
+
+      h2 {
+        font-size: $font-size-4xl;
+        font-weight: $font-weight-extrabold;
+        color: $text-primary;
+        margin-bottom: $spacing-4;
+      }
+
+      p {
+        font-size: $font-size-lg;
+        color: $text-secondary;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+    }
+
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: $spacing-8;
+
+      @media (max-width: $breakpoint-lg) {
+        grid-template-columns: 1fr;
+      }
+
+      .value-card {
+        background: $bg-primary;
+        border-radius: $border-radius-2xl;
+        padding: $spacing-8;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.1);
+        transition: all $transition-base;
+
+        &:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 40px rgba(37, 99, 235, 0.15);
+        }
+
+        .value-icon {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #2563eb, #3b82f6);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: $spacing-4;
+          color: white;
+          font-size: $font-size-xl;
+          box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        h3 {
+          font-size: $font-size-xl;
+          font-weight: $font-weight-bold;
+          color: $text-primary;
+          margin-bottom: $spacing-4;
+        }
+
+        p {
+          color: $text-secondary;
+          line-height: $line-height-relaxed;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // Contact CTA Section
+  .contact-cta-section {
+    padding: $spacing-20 0;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+    text-align: center;
+
+    .cta-content {
+      max-width: 800px;
+      margin: 0 auto;
+
+      h2 {
+        font-size: $font-size-4xl;
+        font-weight: $font-weight-extrabold;
+        margin-bottom: $spacing-4;
+
+        @media (max-width: $breakpoint-md) {
+          font-size: $font-size-3xl;
+        }
+      }
+
+      p {
+        font-size: $font-size-lg;
+        margin-bottom: $spacing-8;
+        opacity: 0.9;
+      }
+
+      .cta-buttons {
+        display: flex;
+        gap: $spacing-4;
+        justify-content: center;
+        margin-bottom: $spacing-8;
+        flex-wrap: wrap;
+
+        .btn {
+          padding: $spacing-4 $spacing-8;
+          font-size: $font-size-lg;
+          font-weight: $font-weight-semibold;
+          border-radius: $border-radius-xl;
+          transition: all $transition-base;
+
+          &.btn-primary {
+            background: white;
+            color: #2563eb;
+            border: none;
+
+            &:hover {
+              background: #f8faff;
+              transform: translateY(-2px);
+              box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+            }
+          }
+
+          &.btn-outline {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+
+            &:hover {
+              background: white;
+              color: #2563eb;
+              transform: translateY(-2px);
+            }
+          }
+        }
+      }
+
+      .contact-info {
+        display: flex;
+        gap: $spacing-8;
+        justify-content: center;
+        flex-wrap: wrap;
+
+        .contact-item {
+          display: flex;
+          align-items: center;
+          gap: $spacing-2;
+          font-size: $font-size-base;
+          opacity: 0.9;
+
+          svg {
+            font-size: $font-size-lg;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Section Header Styles (shared)
+.section-header {
+  text-align: center;
+  margin-bottom: $spacing-16;
+
+  h2 {
+    font-size: $font-size-4xl;
+    font-weight: $font-weight-extrabold;
+    color: $text-primary;
+    margin-bottom: $spacing-4;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: $font-size-3xl;
+    }
+  }
+
+  p {
+    font-size: $font-size-lg;
+    color: $text-secondary;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: $line-height-relaxed;
+  }
+}

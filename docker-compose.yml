@@ -1,0 +1,173 @@
+services:
+  # Redis Cache
+  redis:
+    image: redis:7.4-alpine
+    container_name: driving_school_redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - driving_school_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: driving_school_db
+    env_file:
+      - .env.development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seeds:/docker-entrypoint-initdb.d/seeds
+    ports:
+      - "5432:5432"
+    networks:
+      - driving_school_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: driving_school_backend
+    env_file:
+      - .env.development
+    environment:
+      - NODE_ENV=development
+      - TZ=America/Vancouver
+      - PORT=5002
+      # These will be loaded from .env.development via env_file
+      # Only override if needed, otherwise env_file values are used
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - driving_school_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: driving_school_frontend
+    env_file:
+      - .env.development
+    environment:
+      # REACT_APP_* variables are loaded from .env.development via env_file above
+      # Only set non-REACT_APP variables here that aren't in env_file
+      - TZ=America/Vancouver
+      - HOST=0.0.0.0
+      - PORT=5002
+      - WDS_SOCKET_HOST=localhost
+      - WDS_SOCKET_PORT=80
+      - WDS_SOCKET_PATH=/ws
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - WATCHPACK_POLLING=true
+    ports:
+      - "3000:5002"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - driving_school_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: driving_school_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/pictures:/backend/pictures:ro
+      - ./frontend/build:/usr/share/nginx/html:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    networks:
+      - driving_school_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  driving_school_network:
+    driver: bridge
+

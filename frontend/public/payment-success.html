@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #10b981, #059669);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+        }
+        .success-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: checkmark 0.6s ease-in-out;
+        }
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Your package has been purchased successfully.</p>
+        <p>This window will close automatically...</p>
+        <div class="loading"></div>
+    </div>
+
+    <script>
+        // Close the window after a short delay
+        setTimeout(() => {
+            window.close();
+        }, 2000);
+
+        // Also try to notify the parent window if possible
+        try {
+            if (window.opener) {
+                window.opener.postMessage('payment-success', '*');
+            }
+        } catch (e) {
+            // Cross-origin restrictions may prevent this
+        }
+    </script>
+</body>
+</html>
+
