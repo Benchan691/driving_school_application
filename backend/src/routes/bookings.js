@@ -6,6 +6,27 @@ const { Op } = require('sequelize');
 const emailService = require('../services/emailService');
 const { validateGuestBooking } = require('../middleware/validation');
 
+// #region agent log
+const _agentLog = (hypothesisId, location, message, data = {}, runId = 'initial') => {
+  try {
+    if (typeof fetch !== 'function') return;
+    fetch('http://host.docker.internal:7850/ingest/accbbd89-381e-4b95-8c07-6b91237e6516', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b685e7' },
+      body: JSON.stringify({
+        sessionId: 'b685e7',
+        runId,
+        hypothesisId,
+        location,
+        message,
+        data,
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch {}
+};
+// #endregion
+
 // Public endpoint to get bookings for availability checking (no auth required)
 router.get('/availability', async (req, res) => {
   try {
@@ -155,6 +176,15 @@ router.post('/public', validateGuestBooking, async (req, res) => {
 
     // Send guest booking confirmation email
     try {
+      // #region agent log
+      _agentLog(
+        'H6',
+        'backend/src/routes/bookings.js:POST /public',
+        'Attempting guest booking confirmation email',
+        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
+        'initial',
+      );
+      // #endregion
       await emailService.sendGuestBookingConfirmationEmail(guest, booking);
     } catch (emailError) {
       console.error('Failed to send guest booking confirmation email:', emailError);
@@ -163,6 +193,15 @@ router.post('/public', validateGuestBooking, async (req, res) => {
 
     // Send notification email to admin
     try {
+      // #region agent log
+      _agentLog(
+        'H7',
+        'backend/src/routes/bookings.js:POST /public',
+        'Attempting admin booking notification email',
+        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
+        'initial',
+      );
+      // #endregion
       await emailService.sendAdminBookingNotification(guest, booking);
     } catch (emailError) {
       console.error('Failed to send admin booking notification:', emailError);
@@ -281,6 +320,15 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Send confirmation email to student
     try {
+      // #region agent log
+      _agentLog(
+        'H8',
+        'backend/src/routes/bookings.js:POST /',
+        'Attempting student booking confirmation email',
+        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
+        'initial',
+      );
+      // #endregion
       await emailService.sendBookingConfirmationEmail(req.user, booking);
     } catch (emailError) {
       console.error('Failed to send booking confirmation email:', emailError);
@@ -289,6 +337,15 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Send notification email to admin
     try {
+      // #region agent log
+      _agentLog(
+        'H9',
+        'backend/src/routes/bookings.js:POST /',
+        'Attempting admin booking notification email',
+        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
+        'initial',
+      );
+      // #endregion
       await emailService.sendAdminBookingNotification(req.user, booking);
     } catch (emailError) {
       console.error('Failed to send admin booking notification:', emailError);

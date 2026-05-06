@@ -71,7 +71,7 @@ const PaymentModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                 </div>
                 <div className="header-text">
                   <h2>Complete Your Purchase</h2>
-                  <p>Secure payment powered by Stripe</p>
+                  <p>No account needed · Secure payment powered by Stripe</p>
                 </div>
               </div>
               <button

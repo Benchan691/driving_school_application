@@ -53,8 +53,8 @@ const Login = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="auth-header">
-          <h1>Welcome Back</h1>
-          <p>Sign in to your driving school account</p>
+          <h1>Admin Login</h1>
+          <p>Sign in to access the admin dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="auth-form">

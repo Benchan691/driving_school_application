@@ -134,7 +134,7 @@ const Packages = () => {
                 </div>
 
                 <div className="package-actions">
-                  <Link to="/register" className="btn btn-primary btn-full">
+                  <Link to="/packages" className="btn btn-primary btn-full">
                     Choose Package
                   </Link>
                   <Link to="/contact" className="btn btn-outline btn-full" onClick={scrollToTop}>

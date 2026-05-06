@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { Booking, User } = require('../models');
+const { Booking, User, Instructor, Package } = require('../models');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 const emailService = require('../services/emailService');
@@ -39,16 +39,21 @@ router.get('/', async (req, res) => {
   try {
     // Auto-delete past bookings before fetching current ones
     await autoDeletePastBookings();
-    
+
     const { status, date } = req.query;
     const where = {};
     if (status) where.status = status;
     if (date) where.lesson_date = date;
-    const items = await Booking.findAll({ 
-      include: [{ model: User, attributes: ['id', 'name', 'email', 'phone'], as: 'student' }],
-      where, 
-      order: [['lesson_date', 'DESC'], ['start_time', 'DESC']] 
+    const items = await Booking.findAll({
+      include: [
+        { model: User, attributes: ['id', 'name', 'email', 'phone'], as: 'student' },
+        { model: Instructor, as: 'instructor', required: false, include: [{ model: User, as: 'user', attributes: ['name'] }] },
+        { model: Package, as: 'package', required: false, attributes: ['id', 'name'] }
+      ],
+      where,
+      order: [['lesson_date', 'DESC'], ['start_time', 'DESC']]
     });
+
     res.json({ success: true, data: items });
   } catch (e) {
     console.error('Failed to fetch bookings:', e);

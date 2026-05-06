@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, notes: '', status: 'scheduled' });
 
-  const [view, setView] = useState('bookings'); // bookings | contacts | timetable | payments | packages
+  const [view, setView] = useState('bookings'); // bookings | contacts | timetable | payments | packages | settings
   const [contacts, setContacts] = useState([]);
   const [messageModal, setMessageModal] = useState({ open: false, record: null });
   const [replyModal, setReplyModal] = useState({ open: false, record: null });
@@ -27,6 +27,11 @@ const AdminDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
   const [verifying, setVerifying] = useState(null); // Track which booking is being verified
+
+  // Email settings state (admin)
+  const [emailSettings, setEmailSettings] = useState({ email_user: '', email_from: '', email_pass: '' });
+  const [emailSettingsMeta, setEmailSettingsMeta] = useState({ has_password: false, source: '', settings_key_present: false });
+  const [savingEmailSettings, setSavingEmailSettings] = useState(false);
 
   // Filters
   const [bookingFilters, setBookingFilters] = useState({ status: 'all', q: '', dateFrom: '', dateTo: '' });
@@ -83,6 +88,13 @@ const AdminDashboard = () => {
         if (!resC.ok) { const txt = await resC.text(); throw new Error(`${resC.status} ${resC.statusText} - ${txt}`); }
         const dataC = await resC.json();
         setContacts(Array.isArray(dataC.data) ? dataC.data : []);
+      } else if (view === 'settings') {
+        const resS = await fetch(`${API_BASE}/api/admin/settings/email`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!resS.ok) { const txt = await resS.text(); throw new Error(`${resS.status} ${resS.statusText} - ${txt}`); }
+        const dataS = await resS.json();
+        const s = dataS?.data || {};
+        setEmailSettings({ email_user: s.email_user || '', email_from: s.email_from || '', email_pass: '' });
+        setEmailSettingsMeta({ has_password: !!s.has_password, source: s.source || '', settings_key_present: !!s.settings_key_present });
       }
     } catch (e) {
       setError(e.message || 'Failed to load bookings');
@@ -94,9 +106,35 @@ const AdminDashboard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (token) fetchAll(); }, [token, view]); // Remove fetchAll dependency to prevent infinite loop
 
+  const saveEmailSettings = async () => {
+    setSavingEmailSettings(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/settings/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(emailSettings),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        const s = data?.data || {};
+        setEmailSettings({ email_user: s.email_user || '', email_from: s.email_from || '', email_pass: '' });
+        setEmailSettingsMeta({ has_password: !!s.has_password, source: s.source || '', settings_key_present: !!s.settings_key_present });
+        alert('Email settings updated.');
+      } else {
+        alert(data?.message || 'Failed to update email settings');
+      }
+    } catch (e) {
+      alert(e?.message || 'Failed to update email settings');
+    } finally {
+      setSavingEmailSettings(false);
+    }
+  };
+
   const startEdit = (b) => {
     setEditing(b.id);
-    setForm({ date: b.date, time: b.time, duration_minutes: b.duration_minutes || 60, notes: b.notes || '', status: b.status });
+    const dateVal = b.lesson_date || b.date;
+    const timeVal = b.start_time ? (typeof b.start_time === 'string' ? b.start_time.slice(0, 5) : b.start_time) : b.time;
+    setForm({ date: dateVal, time: timeVal, duration_minutes: b.duration_minutes || 60, notes: b.notes || '', status: b.status });
   };
 
   const saveEdit = async () => {
@@ -261,6 +299,9 @@ const AdminDashboard = () => {
             <button className={`btn ${view==='packages' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('packages')}>
               <FiLayers /> Packages
             </button>
+            <button className={`btn ${view==='settings' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('settings')}>
+              <FiMail /> Email Settings
+            </button>
             <button className={`btn ${view==='timetable' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('timetable')}>
               <FiCalendar /> Lessons Today
               {todayLessonsCount > 0 && (
@@ -315,17 +356,19 @@ const AdminDashboard = () => {
                 <th>User</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th>Notes</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>Duration</th>
                 <th>Status</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredBookings.length === 0 && !loading && (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
+                  <td colSpan="11" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
                 </tr>
               )}
               {filteredBookings.map(b => {
@@ -362,6 +405,7 @@ const AdminDashboard = () => {
                   </td>
                   <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.email || b.guest_email || '-'}</td>
                   <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.phone || b.guest_phone || '-'}</td>
+                  <td title={b.notes || ''} style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.notes ? (b.notes.length > 50 ? `${b.notes.slice(0, 50)}…` : b.notes) : '-'}</td>
                   <td>{editing === b.id ? (
                     <input 
                       type="date" 
@@ -438,6 +482,7 @@ const AdminDashboard = () => {
                       )}
                     </div>
                   )}</td>
+                  <td style={{ fontSize: '12px', color: '#64748b' }}>{b.created_at ? new Date(b.created_at).toLocaleDateString(undefined, { dateStyle: 'short' }) : '-'}</td>
                   <td style={{ display: 'flex', gap: 6 }}>
                     {editing === b.id ? (
                       <button className="btn btn-sm btn-primary" onClick={saveEdit} title="Save">
@@ -482,7 +527,10 @@ const AdminDashboard = () => {
                                 });
                                 const data = await res.json();
                                 if (data?.success) {
-                                  setBookings(prev => prev.filter(booking => booking.id !== b.id));
+                                  setBookings(prev => {
+                                    const next = prev.filter(booking => booking.id !== b.id);
+                                    return next;
+                                  });
                                   alert('Booking deleted successfully');
                                 } else {
                                   alert(data.message || 'Failed to delete booking');
@@ -606,6 +654,60 @@ const AdminDashboard = () => {
 
         {view === 'packages' && (
           <PackageManagement token={token} />
+        )}
+
+        {view === 'settings' && (
+          <div className="table-card settings-card">
+            <div className="settings-content">
+              <h3 className="settings-title">Email (Gmail) Settings</h3>
+              <p className="settings-description">
+                Update the Gmail app password used to send booking emails. The password is stored encrypted on the server.
+              </p>
+
+              {!emailSettingsMeta.settings_key_present && (
+                <div className="alert alert-error settings-alert">
+                  Server encryption key is missing. Set <code>SETTINGS_ENCRYPTION_KEY</code> on the server, then refresh this page.
+                </div>
+              )}
+
+              <div className="settings-form-grid">
+                <label className="settings-field">
+                  <div className="settings-label">Gmail address (EMAIL_USER)</div>
+                  <input className="input" value={emailSettings.email_user} onChange={(e)=>setEmailSettings({ ...emailSettings, email_user: e.target.value })} placeholder="thetruthdrivingschool@gmail.com" />
+                </label>
+
+                <label className="settings-field">
+                  <div className="settings-label">From address (EMAIL_FROM)</div>
+                  <input className="input" value={emailSettings.email_from} onChange={(e)=>setEmailSettings({ ...emailSettings, email_from: e.target.value })} placeholder="thetruthdrivingschool@gmail.com" />
+                </label>
+
+                <label className="settings-field">
+                  <div className="settings-label">
+                    Gmail App Password {emailSettingsMeta.has_password ? '(currently set)' : '(not set)'}
+                  </div>
+                  <input
+                    className="input"
+                    type="password"
+                    value={emailSettings.email_pass}
+                    onChange={(e)=>setEmailSettings({ ...emailSettings, email_pass: e.target.value })}
+                    placeholder="16-character app password"
+                  />
+                  <div className="settings-meta">
+                    Source: <strong>{emailSettingsMeta.source || '-'}</strong>
+                  </div>
+                </label>
+
+                <div className="settings-actions">
+                  <button className="btn btn-primary" onClick={saveEmailSettings} disabled={savingEmailSettings || !emailSettingsMeta.settings_key_present}>
+                    {savingEmailSettings ? 'Saving…' : 'Save Email Settings'}
+                  </button>
+                  <button className="btn btn-outline" onClick={fetchAll} disabled={loading}>
+                    <FiRefreshCw /> Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {view === 'timetable' && (

@@ -1,24 +1,39 @@
 const nodemailer = require('nodemailer');
 const he = require('he');
+const settingsService = require('./settingsService');
+
 // #region agent log
-const fs = require('fs');
-const _debugLog = (data) => { try { fs.appendFileSync('/app/logs/debug.log', JSON.stringify({...data, timestamp: Date.now()}) + '\n'); } catch(e){} };
+const _agentLog = (hypothesisId, location, message, data = {}, runId = 'initial') => {
+  try {
+    if (typeof fetch !== 'function') return;
+    fetch('http://host.docker.internal:7850/ingest/accbbd89-381e-4b95-8c07-6b91237e6516', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b685e7' },
+      body: JSON.stringify({
+        sessionId: 'b685e7',
+        runId,
+        hypothesisId,
+        location,
+        message,
+        data,
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch {}
+};
+
+const _emailDomain = (email) => {
+  if (!email || typeof email !== 'string') return '';
+  const at = email.lastIndexOf('@');
+  if (at < 0) return '';
+  return email.slice(at + 1).toLowerCase();
+};
 // #endregion
 
 class EmailService {
   constructor() {
-    // #region agent log
-    const constructorUser = process.env.EMAIL_USER;
-    const constructorPass = process.env.EMAIL_PASS;
-    _debugLog({location:'emailService.js:constructor',hypothesisId:'A+B+C',message:'Transporter init - env var snapshot',data:{EMAIL_USER_set:!!constructorUser,EMAIL_USER_value:constructorUser,EMAIL_PASS_set:!!constructorPass,EMAIL_PASS_length:constructorPass?constructorPass.length:0,EMAIL_PASS_charCodes:constructorPass?Array.from(constructorPass).map(c=>c.charCodeAt(0)):[],EMAIL_PASS_trimmed_length:constructorPass?constructorPass.trim().length:0,usingFallback_user:!constructorUser,usingFallback_pass:!constructorPass}});
-    // #endregion
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
-      }
-    });
+    // Transport is created lazily in sendEmail based on current settings.
+    this.transporter = null;
   }
 
   // Security: HTML escape helper to prevent XSS attacks in emails
@@ -49,8 +64,37 @@ class EmailService {
 
   async sendEmail(to, subject, html, text) {
     try {
+      const cfg = await settingsService.getEmailConfig();
+
+      // #region agent log
+      _agentLog(
+        'H1',
+        'backend/src/services/emailService.js:sendEmail:entry',
+        'sendEmail called',
+        {
+          toDomain: _emailDomain(to),
+          subject: typeof subject === 'string' ? subject.slice(0, 120) : '',
+          EMAIL_USER_set: !!cfg.user,
+          EMAIL_PASS_set: !!cfg.pass,
+          EMAIL_FROM_set: !!cfg.from,
+          configSource: cfg.source,
+          settingsKeyPresent: cfg.settingsKeyPresent,
+        },
+        'initial',
+      );
+      // #endregion
+
       // Check if email is configured
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      if (!cfg.user || !cfg.pass) {
+        // #region agent log
+        _agentLog(
+          'H2',
+          'backend/src/services/emailService.js:sendEmail:config-check',
+          'Email not configured; skipping send',
+          { EMAIL_USER_set: !!cfg.user, EMAIL_PASS_set: !!cfg.pass, configSource: cfg.source },
+          'initial',
+        );
+        // #endregion
         console.log('⚠️  Email not configured - skipping email send');
         console.log('   To enable emails, set EMAIL_USER and EMAIL_PASS in environment variables');
         console.log('   See EMAIL_SETUP.md for configuration instructions');
@@ -79,13 +123,12 @@ class EmailService {
           : '*'.repeat(pass.length);
         console.log('  EMAIL_PASS:', maskedPass);
         console.log('  EMAIL_PASS length:', pass.length);
-        console.log('  EMAIL_PASS (full, for debugging):', pass);
       } else {
         console.log('  EMAIL_PASS: Not set');
       }
 
       const mailOptions = {
-        from: process.env.EMAIL_FROM || 'noreply@drivingschool.com',
+        from: cfg.from || 'noreply@drivingschool.com',
         to,
         subject,
         html,
@@ -94,24 +137,52 @@ class EmailService {
 
       console.log('📤 Attempting to send email...');
       // #region agent log
-      const transporterAuth = this.transporter.options && this.transporter.options.auth;
-      const runtimePass = process.env.EMAIL_PASS;
-      _debugLog({location:'emailService.js:sendMail',hypothesisId:'A+B+C',message:'Pre-sendMail credential check',data:{transporter_auth_user:transporterAuth?transporterAuth.user:'unknown',transporter_auth_pass_length:transporterAuth&&transporterAuth.pass?transporterAuth.pass.length:0,transporter_auth_pass_matches_env:transporterAuth&&transporterAuth.pass===runtimePass,runtime_EMAIL_PASS_length:runtimePass?runtimePass.length:0,runtime_EMAIL_PASS_charCodes:runtimePass?Array.from(runtimePass).map(c=>c.charCodeAt(0)):[],runtime_EMAIL_USER:process.env.EMAIL_USER}});
+      _agentLog(
+        'H3',
+        'backend/src/services/emailService.js:sendEmail:pre-sendMail',
+        'About to call transporter.sendMail',
+        { toDomain: _emailDomain(to), subject: typeof subject === 'string' ? subject.slice(0, 120) : '', configSource: cfg.source },
+        'initial',
+      );
       // #endregion
-      const result = await this.transporter.sendMail(mailOptions);
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: cfg.user, pass: cfg.pass },
+      });
+      const result = await transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully:', result.messageId);
       console.log('📧 Email response:', result.response);
+      // #region agent log
+      _agentLog(
+        'H4',
+        'backend/src/services/emailService.js:sendEmail:success',
+        'sendMail succeeded',
+        { messageId: result && result.messageId ? String(result.messageId).slice(0, 64) : '' },
+        'initial',
+      );
+      // #endregion
       return { messageId: result.messageId };
     } catch (error) {
       console.error('❌ Email sending failed:');
       console.error('  Error code:', error.code);
       console.error('  Error message:', error.message);
       console.error('  Full error:', error);
-      // #region agent log
-      _debugLog({location:'emailService.js:sendEmail:catch',hypothesisId:'A+B+C+D',message:'SMTP error captured',data:{error_code:error.code,error_message:error.message,error_command:error.command,error_response:error.response,error_responseCode:error.responseCode,EMAIL_USER_at_error:process.env.EMAIL_USER,EMAIL_PASS_length_at_error:process.env.EMAIL_PASS?process.env.EMAIL_PASS.length:0}});
-      // #endregion
       
       // Provide specific error guidance
+      // #region agent log
+      _agentLog(
+        'H5',
+        'backend/src/services/emailService.js:sendEmail:catch',
+        'sendMail failed',
+        {
+          errorCode: error && error.code ? String(error.code) : '',
+          responseCode: error && error.responseCode ? Number(error.responseCode) : null,
+          command: error && error.command ? String(error.command) : '',
+          response: error && error.response ? String(error.response).slice(0, 200) : '',
+        },
+        'initial',
+      );
+      // #endregion
       if (error.code === 'EAUTH') {
         console.error('🔐 Authentication failed. Check your email credentials.');
         console.error('   - Make sure EMAIL_USER is your full Gmail address');
@@ -375,13 +446,37 @@ class EmailService {
   }
 
   async sendBookingConfirmationEmail(user, booking) {
-    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const bookingTime = booking.time;
-    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
+    const dateStr = booking.lesson_date || booking.date;
+    let bookingDate = dateStr || 'N/A';
+    try {
+      if (dateStr) {
+        const dateObj = new Date(dateStr);
+        if (!isNaN(dateObj.getTime())) {
+          bookingDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+      }
+    } catch (e) {
+      console.error('Error formatting booking date:', e);
+    }
+
+    const timeStr = booking.start_time || booking.time || 'N/A';
+    const bookingTime = typeof timeStr === 'string' && timeStr.includes(':')
+      ? timeStr.split(':').slice(0, 2).join(':')
+      : timeStr;
+
+    let duration = '1 hour';
+    if (booking.duration_minutes) {
+      duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
+    } else if (booking.start_time && booking.end_time) {
+      try {
+        const [startH, startM] = (booking.start_time || '00:00').split(':').map(Number);
+        const [endH, endM] = booking.end_time.split(':').map(Number);
+        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+        duration = diffMinutes === 90 ? '1.5 hours' : diffMinutes === 60 ? '1 hour' : `${diffMinutes} minutes`;
+      } catch (e) {
+        console.error('Error calculating duration:', e);
+      }
+    }
 
     const html = `
       <!DOCTYPE html>
@@ -472,7 +567,7 @@ class EmailService {
             <p>Your lesson has been scheduled</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || user.first_name || 'User')},</p>
             <p>Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.</p>
             
             <div class="booking-details">
@@ -1178,13 +1273,37 @@ Thank you for choosing our driving school!
 
   async sendAdminBookingNotification(user, booking) {
     const adminEmail = 'thetruthdrivingschool@gmail.com';
-    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const bookingTime = booking.time;
-    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
+    const dateStr = booking.lesson_date || booking.date;
+    let bookingDate = dateStr || 'N/A';
+    try {
+      if (dateStr) {
+        const dateObj = new Date(dateStr);
+        if (!isNaN(dateObj.getTime())) {
+          bookingDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+      }
+    } catch (e) {
+      console.error('Error formatting booking date:', e);
+    }
+
+    const timeStr = booking.start_time || booking.time || 'N/A';
+    const bookingTime = typeof timeStr === 'string' && timeStr.includes(':')
+      ? timeStr.split(':').slice(0, 2).join(':')
+      : timeStr;
+
+    let duration = '1 hour';
+    if (booking.duration_minutes) {
+      duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
+    } else if (booking.start_time && booking.end_time) {
+      try {
+        const [startH, startM] = (booking.start_time || '00:00').split(':').map(Number);
+        const [endH, endM] = booking.end_time.split(':').map(Number);
+        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+        duration = diffMinutes === 90 ? '1.5 hours' : diffMinutes === 60 ? '1 hour' : `${diffMinutes} minutes`;
+      } catch (e) {
+        console.error('Error calculating duration:', e);
+      }
+    }
 
     const html = `
       <!DOCTYPE html>

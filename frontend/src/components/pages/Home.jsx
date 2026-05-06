@@ -92,7 +92,7 @@ const Home = () => {
               <h1>{homeContent.hero.title}</h1>
               <p className="hero-subtitle">{homeContent.hero.subtitle}</p>
               <div className="hero-buttons">
-                <Link to={isAuthenticated ? dashboardPath : '/register'} className="btn btn-primary btn-lg">
+                <Link to={isAuthenticated ? dashboardPath : '/packages'} className="btn btn-primary btn-lg">
                   {homeContent.hero.primaryCtaText}
                 </Link>
                 <Link to="/packages" className="btn btn-outline btn-lg" onClick={scrollToTop}>

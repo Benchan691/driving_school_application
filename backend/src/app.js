@@ -16,8 +16,8 @@ const instructorRoutes = require('./routes/instructors');
 const packageRoutes = require('./routes/packages');
 const bookingRoutes = require('./routes/bookings');
 const adminBookingRoutes = require('./routes/admin.bookings');
-const adminUserRoutes = require('./routes/admin.users');
 const adminPaymentRoutes = require('./routes/admin.payments');
+const adminSettingsRoutes = require('./routes/admin.settings');
 const paymentRoutes = require('./routes/payments');
 
 const errorHandler = require('./middleware/errorHandler');
@@ -243,8 +243,8 @@ app.use('/api/packages', packageRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin/bookings', adminBookingRoutes);
-app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/payments', adminPaymentRoutes);
+app.use('/api/admin/settings', adminSettingsRoutes);
 
 // 404 handler
 app.use((req, res) => {

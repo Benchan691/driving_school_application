@@ -86,6 +86,7 @@ services:
       - PORT=${PORT}
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./backend/pictures:/app/pictures:ro
       - ./backend/logs:/app/logs
     depends_on:
       postgres:
@@ -131,7 +132,7 @@ services:
           memory: 512M
     security_opt:
       - no-new-privileges:true
-    read_only: true
+    read_only: false
 
   # Nginx Reverse Proxy (Production)
   nginx:

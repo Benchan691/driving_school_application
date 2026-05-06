@@ -59,7 +59,7 @@ const Header = () => {
               </div>
             ) : (
               <div className="auth-buttons">
-                <Link to="/login" className="btn btn-outline">Login</Link>
+                <Link to="/login" className="btn btn-outline">Admin Login</Link>
               </div>
             )}
           </div>
@@ -91,7 +91,7 @@ const Header = () => {
               </div>
             ) : (
               <div className="mobile-auth">
-                <Link to="/login" className="nav-link" onClick={toggleMenu}>Login</Link>
+                <Link to="/login" className="nav-link" onClick={toggleMenu}>Admin Login</Link>
               </div>
             )}
           </nav>

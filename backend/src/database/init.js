@@ -5,6 +5,7 @@ const Booking = require('../models/Booking');
 const ContactMessage = require('../models/ContactMessage');
 const Package = require('../models/Package');
 const UserPackage = require('../models/UserPackage');
+const SystemSetting = require('../models/SystemSetting');
 
 // Idempotent migrations — safe to run on every startup
 const runMigrations = async (seq) => {
@@ -25,6 +26,17 @@ const runMigrations = async (seq) => {
   await seq.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_name VARCHAR(200);`);
   await seq.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255);`);
   await seq.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_phone VARCHAR(30);`);
+
+  // System settings table for runtime-configurable credentials (encrypted at rest)
+  await seq.query(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key VARCHAR(120) PRIMARY KEY,
+      value_encrypted TEXT,
+      enc_iv VARCHAR(64),
+      enc_tag VARCHAR(64),
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 };
 
 const initDatabase = async () => {
@@ -42,7 +54,10 @@ const initDatabase = async () => {
     Instructor.hasMany(Booking, { foreignKey: 'instructor_id', as: 'bookings' });
     Booking.belongsTo(Instructor, { foreignKey: 'instructor_id', as: 'instructor' });
 
-    // Package associations
+    Package.hasMany(Booking, { foreignKey: 'package_id', as: 'bookings' });
+    Booking.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
+
+    // Package associations (UserPackage)
     User.hasMany(UserPackage, { foreignKey: 'user_id', as: 'userPackages' });
     UserPackage.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
     
