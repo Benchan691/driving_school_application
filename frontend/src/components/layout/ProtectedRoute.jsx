@@ -19,7 +19,16 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
   // Check role-based access if required
   if (requiredRole && user?.user_type !== requiredRole) {
-    return <Navigate to="/login" replace />;
+    // Redirect to appropriate page based on user role
+    if (user?.user_type === 'student') {
+      return <Navigate to="/dashboard" replace />;
+    } else if (user?.user_type === 'instructor') {
+      return <Navigate to="/dashboard" replace />;
+    } else if (user?.user_type === 'admin') {
+      return <Navigate to="/dashboard/admin" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   // User is authenticated and has required role (if specified)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -26,46 +26,78 @@ const Home = () => {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const reviews = homeContent.reviews.items;
 
-  // Auto-advance slideshow with resettable timer
-  useEffect(() => {
-    const timer = setInterval(() => {
+  // Refs for timers
+  const slideshowTimerRef = useRef(null);
+  const reviewTimerRef = useRef(null);
+
+  // Reset slideshow timer
+  const resetSlideshowTimer = useCallback(() => {
+    if (slideshowTimerRef.current) {
+      clearInterval(slideshowTimerRef.current);
+    }
+    slideshowTimerRef.current = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000);
+  }, [slideshowImages.length]);
 
-    return () => clearInterval(timer);
-  }, [slideshowImages.length, currentSlide]); // Add currentSlide to reset timer on manual navigation
-
-  // Auto-advance reviews slider with resettable timer
-  useEffect(() => {
-    const timer = setInterval(() => {
+  // Reset review timer
+  const resetReviewTimer = useCallback(() => {
+    if (reviewTimerRef.current) {
+      clearInterval(reviewTimerRef.current);
+    }
+    reviewTimerRef.current = setInterval(() => {
       setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
-    }, 30000); // Change review every 30 seconds
+    }, 30000);
+  }, [reviews.length]);
 
-    return () => clearInterval(timer);
-  }, [reviews.length, currentReviewIndex]); // Add currentReviewIndex to dependencies to reset timer
+  // Auto-advance slideshow
+  useEffect(() => {
+    resetSlideshowTimer();
+    return () => {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current);
+      }
+    };
+  }, [resetSlideshowTimer]);
+
+  // Auto-advance reviews slider
+  useEffect(() => {
+    resetReviewTimer();
+    return () => {
+      if (reviewTimerRef.current) {
+        clearInterval(reviewTimerRef.current);
+      }
+    };
+  }, [resetReviewTimer]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
+    resetSlideshowTimer(); // Reset timer on manual navigation
   };
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + slideshowImages.length) % slideshowImages.length);
+    resetSlideshowTimer(); // Reset timer on manual navigation
   };
 
   const goToSlide = (index) => {
     setCurrentSlide(index);
+    resetSlideshowTimer(); // Reset timer on manual navigation
   };
 
   const nextReview = () => {
     setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
+    resetReviewTimer(); // Reset timer on manual navigation
   };
 
   const prevReview = () => {
     setCurrentReviewIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+    resetReviewTimer(); // Reset timer on manual navigation
   };
 
   const goToReview = (index) => {
     setCurrentReviewIndex(index);
+    resetReviewTimer(); // Reset timer on manual navigation
   };
 
   // Render star rating
@@ -92,7 +124,7 @@ const Home = () => {
               <h1>{homeContent.hero.title}</h1>
               <p className="hero-subtitle">{homeContent.hero.subtitle}</p>
               <div className="hero-buttons">
-                <Link to={isAuthenticated ? dashboardPath : '/packages'} className="btn btn-primary btn-lg">
+                <Link to={isAuthenticated ? dashboardPath : '/register'} className="btn btn-primary btn-lg">
                   {homeContent.hero.primaryCtaText}
                 </Link>
                 <Link to="/packages" className="btn btn-outline btn-lg" onClick={scrollToTop}>

@@ -1,10 +1,89 @@
 const crypto = require('crypto');
 const User = require('../models/User');
+const Instructor = require('../models/Instructor');
 const { generateTokens, verifyRefreshToken } = require('../utils/jwt');
 const emailService = require('../services/emailService');
 
 class AuthController {
-  // Login user (admin only)
+  // Register new user
+  async register(req, res) {
+    try {
+      const {
+        first_name,
+        last_name,
+        email,
+        password,
+        phone,
+        user_type,
+        license_number,
+        years_experience,
+        hourly_rate
+      } = req.body;
+
+      // Check if user already exists
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'User with this email already exists'
+        });
+      }
+
+      // Create user
+      const user = await User.create({
+        first_name,
+        last_name,
+        email,
+        password,
+        phone,
+        user_type,
+        is_verified: true // Auto-verify for now
+      });
+
+      // If user is an instructor, create instructor profile
+      if (user_type === 'instructor') {
+        await Instructor.create({
+          user_id: user.id,
+          license_number,
+          years_experience,
+          hourly_rate
+        });
+      }
+
+      // Generate tokens
+      const { accessToken, refreshToken } = generateTokens(user);
+
+      // Update user with refresh token
+      await user.update({ refresh_token: refreshToken });
+
+      // Send welcome email
+      try {
+        await emailService.sendWelcomeEmail(user);
+      } catch (emailError) {
+        console.error('Welcome email failed:', emailError);
+        // Don't fail registration if email fails
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'User registered successfully',
+        data: {
+          user: user.toJSON(),
+          accessToken,
+          refreshToken
+        }
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Registration failed',
+        error: error.message
+      });
+    }
+  }
+
+  // Login user
   async login(req, res) {
     try {
       const { email, password } = req.body;
@@ -25,14 +104,6 @@ class AuthController {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password'
-        });
-      }
-
-      // Restrict login to admin users only
-      if (user.user_type !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. Admin login only.'
         });
       }
 
@@ -154,7 +225,7 @@ class AuthController {
   async updateProfile(req, res) {
     try {
       const user = req.user;
-      const allowedUpdates = ['name', 'phone'];
+      const allowedUpdates = ['first_name', 'last_name', 'phone'];
       const updates = {};
 
       // Only allow certain fields to be updated

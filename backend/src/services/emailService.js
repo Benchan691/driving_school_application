@@ -1,39 +1,17 @@
 const nodemailer = require('nodemailer');
 const he = require('he');
-const settingsService = require('./settingsService');
-
-// #region agent log
-const _agentLog = (hypothesisId, location, message, data = {}, runId = 'initial') => {
-  try {
-    if (typeof fetch !== 'function') return;
-    fetch('http://host.docker.internal:7850/ingest/accbbd89-381e-4b95-8c07-6b91237e6516', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b685e7' },
-      body: JSON.stringify({
-        sessionId: 'b685e7',
-        runId,
-        hypothesisId,
-        location,
-        message,
-        data,
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  } catch {}
-};
-
-const _emailDomain = (email) => {
-  if (!email || typeof email !== 'string') return '';
-  const at = email.lastIndexOf('@');
-  if (at < 0) return '';
-  return email.slice(at + 1).toLowerCase();
-};
-// #endregion
 
 class EmailService {
   constructor() {
-    // Transport is created lazily in sendEmail based on current settings.
-    this.transporter = null;
+    // Create transporter - using Gmail for development
+    // In production, you should use a proper email service like SendGrid, AWS SES, etc.
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+        pass: process.env.EMAIL_PASS || 'your-app-password'
+      }
+    });
   }
 
   // Security: HTML escape helper to prevent XSS attacks in emails
@@ -64,39 +42,10 @@ class EmailService {
 
   async sendEmail(to, subject, html, text) {
     try {
-      const cfg = await settingsService.getEmailConfig();
-
-      // #region agent log
-      _agentLog(
-        'H1',
-        'backend/src/services/emailService.js:sendEmail:entry',
-        'sendEmail called',
-        {
-          toDomain: _emailDomain(to),
-          subject: typeof subject === 'string' ? subject.slice(0, 120) : '',
-          EMAIL_USER_set: !!cfg.user,
-          EMAIL_PASS_set: !!cfg.pass,
-          EMAIL_FROM_set: !!cfg.from,
-          configSource: cfg.source,
-          settingsKeyPresent: cfg.settingsKeyPresent,
-        },
-        'initial',
-      );
-      // #endregion
-
       // Check if email is configured
-      if (!cfg.user || !cfg.pass) {
-        // #region agent log
-        _agentLog(
-          'H2',
-          'backend/src/services/emailService.js:sendEmail:config-check',
-          'Email not configured; skipping send',
-          { EMAIL_USER_set: !!cfg.user, EMAIL_PASS_set: !!cfg.pass, configSource: cfg.source },
-          'initial',
-        );
-        // #endregion
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         console.log('⚠️  Email not configured - skipping email send');
-        console.log('   To enable emails, set EMAIL_USER and EMAIL_PASS in environment variables');
+        console.log('   To enable emails, set EMAIL_USER and EMAIL_PASS in .env file');
         console.log('   See EMAIL_SETUP.md for configuration instructions');
         return { messageId: 'email-not-configured' };
       }
@@ -106,29 +55,11 @@ class EmailService {
       console.log('  From:', process.env.EMAIL_FROM || 'noreply@drivingschool.com');
       console.log('  To:', to);
       console.log('  Subject:', subject);
-      
-      // Log EMAIL_USER value for debugging
-      if (process.env.EMAIL_USER) {
-        console.log('  EMAIL_USER:', process.env.EMAIL_USER);
-        console.log('  EMAIL_USER length:', process.env.EMAIL_USER.length);
-      } else {
-        console.log('  EMAIL_USER: Not set');
-      }
-      
-      // Log EMAIL_PASS value (masked for security) for debugging
-      if (process.env.EMAIL_PASS) {
-        const pass = process.env.EMAIL_PASS;
-        const maskedPass = pass.length > 8 
-          ? `${pass.substring(0, 4)}${'*'.repeat(pass.length - 8)}${pass.substring(pass.length - 4)}`
-          : '*'.repeat(pass.length);
-        console.log('  EMAIL_PASS:', maskedPass);
-        console.log('  EMAIL_PASS length:', pass.length);
-      } else {
-        console.log('  EMAIL_PASS: Not set');
-      }
+      console.log('  Email User:', process.env.EMAIL_USER ? 'Set' : 'Not set');
+      console.log('  Email Pass:', process.env.EMAIL_PASS ? 'Set' : 'Not set');
 
       const mailOptions = {
-        from: cfg.from || 'noreply@drivingschool.com',
+        from: process.env.EMAIL_FROM || 'noreply@drivingschool.com',
         to,
         subject,
         html,
@@ -136,31 +67,9 @@ class EmailService {
       };
 
       console.log('📤 Attempting to send email...');
-      // #region agent log
-      _agentLog(
-        'H3',
-        'backend/src/services/emailService.js:sendEmail:pre-sendMail',
-        'About to call transporter.sendMail',
-        { toDomain: _emailDomain(to), subject: typeof subject === 'string' ? subject.slice(0, 120) : '', configSource: cfg.source },
-        'initial',
-      );
-      // #endregion
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: cfg.user, pass: cfg.pass },
-      });
-      const result = await transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully:', result.messageId);
       console.log('📧 Email response:', result.response);
-      // #region agent log
-      _agentLog(
-        'H4',
-        'backend/src/services/emailService.js:sendEmail:success',
-        'sendMail succeeded',
-        { messageId: result && result.messageId ? String(result.messageId).slice(0, 64) : '' },
-        'initial',
-      );
-      // #endregion
       return { messageId: result.messageId };
     } catch (error) {
       console.error('❌ Email sending failed:');
@@ -169,20 +78,6 @@ class EmailService {
       console.error('  Full error:', error);
       
       // Provide specific error guidance
-      // #region agent log
-      _agentLog(
-        'H5',
-        'backend/src/services/emailService.js:sendEmail:catch',
-        'sendMail failed',
-        {
-          errorCode: error && error.code ? String(error.code) : '',
-          responseCode: error && error.responseCode ? Number(error.responseCode) : null,
-          command: error && error.command ? String(error.command) : '',
-          response: error && error.response ? String(error.response).slice(0, 200) : '',
-        },
-        'initial',
-      );
-      // #endregion
       if (error.code === 'EAUTH') {
         console.error('🔐 Authentication failed. Check your email credentials.');
         console.error('   - Make sure EMAIL_USER is your full Gmail address');
@@ -232,7 +127,7 @@ class EmailService {
             <h2>Password Reset Request</h2>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.first_name)},</p>
             <p>You requested to reset your password for your Driving School account.</p>
             <p>Click the button below to reset your password:</p>
             <a href="${this.sanitizeUrl(resetUrl)}" class="button">Reset Password</a>
@@ -252,7 +147,7 @@ class EmailService {
     const text = `
       Password Reset Request - Driving School
       
-      Hello ${user.name?.split(' ')[0] || 'User'},
+      Hello ${user.first_name},
       
       You requested to reset your password for your Driving School account.
       
@@ -304,7 +199,7 @@ class EmailService {
             <h1>Welcome to Driving School!</h1>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.first_name)},</p>
             <p>Welcome to our driving school! We're excited to have you join our community.</p>
             <p>Your account has been successfully created and you can now:</p>
             <ul>
@@ -326,7 +221,7 @@ class EmailService {
     const text = `
       Welcome to Driving School!
       
-      Hello ${user.name?.split(' ')[0] || 'User'},
+      Hello ${user.first_name},
       
       Welcome to our driving school! We're excited to have you join our community.
       
@@ -446,37 +341,13 @@ class EmailService {
   }
 
   async sendBookingConfirmationEmail(user, booking) {
-    const dateStr = booking.lesson_date || booking.date;
-    let bookingDate = dateStr || 'N/A';
-    try {
-      if (dateStr) {
-        const dateObj = new Date(dateStr);
-        if (!isNaN(dateObj.getTime())) {
-          bookingDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        }
-      }
-    } catch (e) {
-      console.error('Error formatting booking date:', e);
-    }
-
-    const timeStr = booking.start_time || booking.time || 'N/A';
-    const bookingTime = typeof timeStr === 'string' && timeStr.includes(':')
-      ? timeStr.split(':').slice(0, 2).join(':')
-      : timeStr;
-
-    let duration = '1 hour';
-    if (booking.duration_minutes) {
-      duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
-    } else if (booking.start_time && booking.end_time) {
-      try {
-        const [startH, startM] = (booking.start_time || '00:00').split(':').map(Number);
-        const [endH, endM] = booking.end_time.split(':').map(Number);
-        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
-        duration = diffMinutes === 90 ? '1.5 hours' : diffMinutes === 60 ? '1 hour' : `${diffMinutes} minutes`;
-      } catch (e) {
-        console.error('Error calculating duration:', e);
-      }
-    }
+    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const bookingTime = booking.time;
+    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
 
     const html = `
       <!DOCTYPE html>
@@ -567,7 +438,7 @@ class EmailService {
             <p>Your lesson has been scheduled</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || user.first_name || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.first_name)},</p>
             <p>Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.</p>
             
             <div class="booking-details">
@@ -645,53 +516,13 @@ Thank you for choosing our driving school!
   }
 
   async sendBookingVerifiedEmail(user, booking) {
-    // Handle date format - booking may have lesson_date or date
-    const dateStr = booking.lesson_date || booking.date;
-    let bookingDate;
-    try {
-      if (dateStr) {
-        // If it's already a formatted date string (YYYY-MM-DD), parse it
-        const dateObj = new Date(dateStr);
-        if (!isNaN(dateObj.getTime())) {
-          bookingDate = dateObj.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-        } else {
-          bookingDate = dateStr; // Use as-is if parsing fails
-        }
-      } else {
-        bookingDate = 'N/A';
-      }
-    } catch (error) {
-      console.error('Error formatting booking date:', error);
-      bookingDate = dateStr || 'N/A';
-    }
-    
-    // Handle time format - booking may have start_time or time
-    const bookingTime = booking.start_time || booking.time || 'N/A';
-    // Format time to HH:MM if it's in HH:MM:SS format
-    const formattedTime = bookingTime.includes(':') 
-      ? bookingTime.split(':').slice(0, 2).join(':') 
-      : bookingTime;
-    
-    // Calculate duration from end_time - start_time or use duration_minutes
-    let duration = '1 hour';
-    if (booking.duration_minutes) {
-      duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
-    } else if (booking.start_time && booking.end_time) {
-      try {
-        const [startH, startM] = (booking.start_time || '00:00').split(':').map(Number);
-        const [endH, endM] = booking.end_time.split(':').map(Number);
-        const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
-        const diffMinutes = endMinutes - startMinutes;
-        duration = diffMinutes === 90 ? '1.5 hours' : diffMinutes === 60 ? '1 hour' : `${diffMinutes} minutes`;
-      } catch (error) {
-        console.error('Error calculating duration:', error);
-      }
-    }
+    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const bookingTime = booking.time;
+    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
 
     const html = `
       <!DOCTYPE html>
@@ -782,7 +613,7 @@ Thank you for choosing our driving school!
             <p>Your lesson has been verified</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.first_name)},</p>
             <p>Great news! Your driving lesson has been confirmed and verified by our team.</p>
             
             <div class="booking-details">
@@ -793,7 +624,7 @@ Thank you for choosing our driving school!
               </div>
               <div class="booking-row">
                 <span class="booking-label">Time:</span>
-                <span class="booking-value">${this.escapeHtml(formattedTime)}</span>
+                <span class="booking-value">${this.escapeHtml(bookingTime)}</span>
               </div>
               <div class="booking-row">
                 <span class="booking-label">Duration:</span>
@@ -830,13 +661,13 @@ Thank you for choosing our driving school!
     const text = `
 ✅ Booking Confirmed! - Your lesson has been verified
 
-Hello ${user.name?.split(' ')[0] || 'User'},
+Hello ${user.first_name},
 
 Great news! Your driving lesson has been confirmed and verified by our team.
 
 📋 Confirmed Booking Details:
 Date: ${bookingDate}
-Time: ${formattedTime}
+Time: ${bookingTime}
 Duration: ${duration}
 Instructor: ${booking.instructor_name || 'To be assigned'}
 ${booking.notes ? `Notes: ${booking.notes}` : ''}
@@ -965,7 +796,7 @@ Thank you for choosing our driving school!
             <p>Your lesson request could not be confirmed</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.first_name)},</p>
             <p>We regret to inform you that your driving lesson request could not be confirmed at this time.</p>
             
             <div class="booking-details">
@@ -1179,7 +1010,7 @@ Thank you for your understanding.
             <p>Thank you for your purchase</p>
           </div>
           <div class="content">
-            <p>Hello ${this.escapeHtml(user.name?.split(' ')[0] || 'User')},</p>
+            <p>Hello ${this.escapeHtml(user.first_name)},</p>
             <p>Your payment has been processed successfully. Here are the details of your purchase:</p>
             
             <div class="receipt-box">
@@ -1273,37 +1104,13 @@ Thank you for choosing our driving school!
 
   async sendAdminBookingNotification(user, booking) {
     const adminEmail = 'thetruthdrivingschool@gmail.com';
-    const dateStr = booking.lesson_date || booking.date;
-    let bookingDate = dateStr || 'N/A';
-    try {
-      if (dateStr) {
-        const dateObj = new Date(dateStr);
-        if (!isNaN(dateObj.getTime())) {
-          bookingDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        }
-      }
-    } catch (e) {
-      console.error('Error formatting booking date:', e);
-    }
-
-    const timeStr = booking.start_time || booking.time || 'N/A';
-    const bookingTime = typeof timeStr === 'string' && timeStr.includes(':')
-      ? timeStr.split(':').slice(0, 2).join(':')
-      : timeStr;
-
-    let duration = '1 hour';
-    if (booking.duration_minutes) {
-      duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
-    } else if (booking.start_time && booking.end_time) {
-      try {
-        const [startH, startM] = (booking.start_time || '00:00').split(':').map(Number);
-        const [endH, endM] = booking.end_time.split(':').map(Number);
-        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
-        duration = diffMinutes === 90 ? '1.5 hours' : diffMinutes === 60 ? '1 hour' : `${diffMinutes} minutes`;
-      } catch (e) {
-        console.error('Error calculating duration:', e);
-      }
-    }
+    const bookingDate = new Date(booking.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const bookingTime = booking.time;
+    const duration = booking.duration_minutes === 90 ? '1.5 hours' : '1 hour';
 
     const html = `
       <!DOCTYPE html>
@@ -1358,7 +1165,7 @@ Thank you for choosing our driving school!
               <h3>📋 Booking Details</h3>
               <div class="detail-row">
                 <span class="label">Student:</span>
-                <span class="value">${this.escapeHtml(user.name || '')}</span>
+                <span class="value">${this.escapeHtml(user.first_name)} ${this.escapeHtml(user.last_name)}</span>
               </div>
               <div class="detail-row">
                 <span class="label">Email:</span>
@@ -1421,7 +1228,7 @@ A student has created a new booking
 Please login to the admin dashboard to review and verify this booking.
 
 📋 Booking Details:
-Student: ${user.name || ''}
+Student: ${user.first_name} ${user.last_name}
 Email: ${user.email}
 Phone: ${user.phone || 'Not provided'}
 Date: ${bookingDate}
@@ -1594,215 +1401,6 @@ This is an automated notification.
     );
   }
 
-  async sendGuestBookingConfirmationEmail(guest, booking) {
-    if (!guest || !booking) {
-      throw new Error('Missing required parameters for guest booking confirmation email');
-    }
-
-    const bookingDate = new Date(booking.lesson_date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const bookingTime = booking.start_time;
-    const duration = booking.end_time ?
-      (() => {
-        const [startH, startM] = booking.start_time.split(':').map(Number);
-        const [endH, endM] = booking.end_time.split(':').map(Number);
-        const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
-        return diffMinutes === 90 ? '1.5 hours' : '1 hour';
-      })() : '1 hour';
-    const bookingReference = booking.id;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; object-src 'none';">
-        <title>Booking Confirmation - The Truth Driving School</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #f5f5f5;
-          }
-          .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 8px; 
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          }
-          .header { 
-            background: #2563eb; 
-            color: white; 
-            padding: 30px 20px; 
-            text-align: center; 
-          }
-          .header h1 { 
-            margin: 0; 
-            font-size: 28px; 
-            font-weight: bold;
-          }
-          .content { 
-            padding: 30px 20px; 
-            background: white; 
-          }
-          .booking-details { 
-            background: #f8fafc; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 8px; 
-            padding: 20px; 
-            margin: 20px 0; 
-          }
-          .booking-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 8px 0; 
-            border-bottom: 1px solid #e2e8f0; 
-          }
-          .booking-row:last-child { 
-            border-bottom: none; 
-          }
-          .booking-label { 
-            font-weight: 600; 
-            color: #374151; 
-          }
-          .booking-value { 
-            color: #1f2937; 
-          }
-          .reference-box {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-          }
-          .reference-box code {
-            font-size: 18px;
-            font-weight: bold;
-            color: #92400e;
-            letter-spacing: 2px;
-          }
-          .status-pending { 
-            background: #fef3c7; 
-            border: 1px solid #f59e0b; 
-            border-radius: 6px; 
-            padding: 15px; 
-            margin: 20px 0; 
-            color: #92400e; 
-            text-align: center;
-          }
-          .footer { 
-            text-align: center; 
-            color: #6b7280; 
-            font-size: 14px; 
-            margin-top: 30px; 
-            padding: 20px; 
-            background: #f8f9fa; 
-            border-top: 1px solid #e5e7eb;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>📅 Booking Confirmation</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your lesson has been scheduled</p>
-          </div>
-          <div class="content">
-            <p>Hello ${this.escapeHtml(guest.name?.split(' ')[0] || 'there')},</p>
-            <p>Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.</p>
-            
-            <div class="reference-box">
-              <p style="margin: 0 0 10px 0; font-weight: 600; color: #92400e;">Booking Reference Number</p>
-              <code>${bookingReference.substring(0, 8).toUpperCase()}</code>
-            </div>
-            
-            <div class="booking-details">
-              <h3 style="margin-top: 0;">📋 Booking Details</h3>
-              <div class="booking-row">
-                <span class="booking-label">Date:</span>
-                <span class="booking-value">${this.escapeHtml(bookingDate)}</span>
-              </div>
-              <div class="booking-row">
-                <span class="booking-label">Time:</span>
-                <span class="booking-value">${this.escapeHtml(bookingTime)}</span>
-              </div>
-              <div class="booking-row">
-                <span class="booking-label">Duration:</span>
-                <span class="booking-value">${this.escapeHtml(duration)}</span>
-              </div>
-              <div class="booking-row">
-                <span class="booking-label">Status:</span>
-                <span class="booking-value">Pending Verification</span>
-              </div>
-              ${booking.notes ? `
-              <div class="booking-row">
-                <span class="booking-label">Notes:</span>
-                <span class="booking-value">${this.escapeHtmlWithNewlines(booking.notes)}</span>
-              </div>
-              ` : ''}
-            </div>
-            
-            <div class="status-pending">
-              ⏳ <strong>Status: Pending Verification</strong><br>
-              We'll send you another email once your booking is confirmed by our team.
-            </div>
-            
-            <p>If you need to make any changes or have questions, please contact us as soon as possible.</p>
-            <p>Thank you for choosing The Truth Driving School!</p>
-          </div>
-          <div class="footer">
-            <p>© 2024 The Truth Driving School. All rights reserved.</p>
-            <p>Phone: +1 (604) 773 8906 | Email: thetruthdrivingschool@gmail.com</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const text = `
-📅 Booking Confirmation - Your lesson has been scheduled
-
-Hello ${this.escapeHtml(guest.name?.split(' ')[0] || 'there')},
-
-Thank you for booking a driving lesson with us! Your booking has been received and is pending verification.
-
-Booking Reference Number: ${bookingReference.substring(0, 8).toUpperCase()}
-
-📋 Booking Details:
-Date: ${bookingDate}
-Time: ${bookingTime}
-Duration: ${duration}
-Status: Pending Verification
-${booking.notes ? `Notes: ${booking.notes}` : ''}
-
-⏳ Status: Pending Verification
-We'll send you another email once your booking is confirmed by our team.
-
-If you need to make any changes or have questions, please contact us as soon as possible.
-
-Thank you for choosing The Truth Driving School!
-
-© 2024 The Truth Driving School. All rights reserved.
-Phone: +1 (604) 773 8906 | Email: thetruthdrivingschool@gmail.com
-    `;
-
-    return await this.sendEmail(
-      guest.email,
-      'Booking Confirmation - The Truth Driving School',
-      html,
-      text
-    );
-  }
-
   async sendAdminPaymentNotification(user, packageData, paymentResult) {
     const adminEmail = 'thetruthdrivingschool@gmail.com';
     const receiptNumber = paymentResult.paymentIntentId || 'N/A';
@@ -1919,7 +1517,7 @@ Phone: +1 (604) 773 8906 | Email: thetruthdrivingschool@gmail.com
               <h3>👤 Customer Details</h3>
               <div class="detail-row">
                 <span class="label">Name:</span>
-                <span class="value">${this.escapeHtml(user.name || '')}</span>
+                <span class="value">${this.escapeHtml(user.first_name)} ${this.escapeHtml(user.last_name)}</span>
               </div>
               <div class="detail-row">
                 <span class="label">Email:</span>
@@ -1969,7 +1567,7 @@ Description: ${packageData.description || 'Driving lesson package'}
 Duration: ${packageData.duration}
 
 👤 Customer Details:
-Name: ${user.name || ''}
+Name: ${user.first_name} ${user.last_name}
 Email: ${user.email}
 Phone: ${user.phone || 'Not provided'}
 

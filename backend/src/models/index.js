@@ -4,7 +4,6 @@ const Booking = require('./Booking');
 const ContactMessage = require('./ContactMessage');
 const UserPackage = require('./UserPackage');
 const Package = require('./Package');
-const SystemSetting = require('./SystemSetting');
 
 module.exports = {
   User,
@@ -12,6 +11,5 @@ module.exports = {
   Booking,
   ContactMessage,
   UserPackage,
-  Package,
-  SystemSetting,
+  Package
 };

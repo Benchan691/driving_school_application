@@ -61,14 +61,9 @@ const TodayTimetable = ({ bookings = [], onRefresh }) => {
     
     dateBookings.forEach(booking => {
       const startTime = booking.start_time?.slice(0, 5) || booking.time;
-      if (!startTime) {
-        return;
-      }
       const duration = booking.end_time && booking.start_time ? 
         (new Date(`2000-01-01T${booking.end_time}`) - new Date(`2000-01-01T${booking.start_time}`)) / 60000 :
         (booking.duration_minutes || 60);
-      if (!Number.isFinite(duration) || duration <= 0) {
-      }
       
       // Calculate how many 30-minute slots this booking spans
       const [startHour, startMin] = startTime.split(':').map(Number);
@@ -144,6 +139,7 @@ const TodayTimetable = ({ bookings = [], onRefresh }) => {
         <div className="timetable-columns">
           <div className="column-header">Time</div>
           <div className="column-header">Student</div>
+          <div className="column-header">Instructor</div>
           <div className="column-header">Duration</div>
         </div>
 
@@ -179,13 +175,9 @@ const TodayTimetable = ({ bookings = [], onRefresh }) => {
                       {booking.isFirstSlot ? (
                         <>
                           <div className="student-name">
-                            {booking.student?.name ||
-                             booking.user?.name ||
-                             booking.guest_name ||
-                             (booking.student?.id ? `User #${booking.student.id.slice(0, 8)}` : null) ||
-                             (booking.user?.id ? `User #${booking.user.id.slice(0, 8)}` : null) ||
-                             ((booking.student_id || booking.user_id) ? `User #${String(booking.student_id || booking.user_id).slice(0, 8)}` : null) ||
-                             'Guest Student'}
+                            {booking.student ? `${booking.student.first_name} ${booking.student.last_name}` : 
+                             booking.user ? `${booking.user.first_name} ${booking.user.last_name}` : 
+                             `User #${(booking.student_id || booking.user_id)?.slice(0, 8)}`}
                           </div>
                           {booking.notes && (
                             <div className="booking-notes" title={booking.notes}>
@@ -207,16 +199,21 @@ const TodayTimetable = ({ bookings = [], onRefresh }) => {
                   )}
                 </div>
 
+                <div className="instructor-info">
+                  {booking ? (
+                    booking.isFirstSlot ? 
+                      (booking.instructor?.user?.first_name || booking.instructor_name || 'TBD') : 
+                      '↑'
+                  ) : '-'}
+                </div>
+
                 <div className="duration-info">
                   {booking ? (
                     booking.isFirstSlot ? (
                       (() => {
-                        const start = new Date(`2000-01-01T${booking.start_time || booking.time || '00:00'}`);
-                        const end = new Date(`2000-01-01T${booking.end_time || booking.time || '00:00'}`);
-                        const computedDuration = (end - start) / 60000;
-                        const durationMinutes = Number.isFinite(computedDuration) && computedDuration > 0
-                          ? computedDuration
-                          : (booking.duration_minutes || 60);
+                        const start = new Date(`2000-01-01T${booking.start_time || booking.time}`);
+                        const end = new Date(`2000-01-01T${booking.end_time || booking.time}`);
+                        const durationMinutes = (end - start) / 60000 || 60;
                         return `${durationMinutes}m`;
                       })()
                     ) : '↑'

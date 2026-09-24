@@ -4,80 +4,6 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { Booking, UserPackage, User } = require('../models');
 const { Op } = require('sequelize');
 const emailService = require('../services/emailService');
-const { validateGuestBooking } = require('../middleware/validation');
-
-// #region agent log
-const _agentLog = (hypothesisId, location, message, data = {}, runId = 'initial') => {
-  try {
-    if (typeof fetch !== 'function') return;
-    fetch('http://host.docker.internal:7850/ingest/accbbd89-381e-4b95-8c07-6b91237e6516', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b685e7' },
-      body: JSON.stringify({
-        sessionId: 'b685e7',
-        runId,
-        hypothesisId,
-        location,
-        message,
-        data,
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  } catch {}
-};
-// #endregion
-
-// Public endpoint to get bookings for availability checking (no auth required)
-router.get('/availability', async (req, res) => {
-  try {
-    const { date } = req.query;
-    if (!date) {
-      return res.status(400).json({
-        success: false,
-        message: 'Date parameter is required (format: YYYY-MM-DD)'
-      });
-    }
-
-    // Get all bookings for the specified date that are confirmed or pending (not cancelled)
-    const bookings = await Booking.findAll({
-      where: {
-        lesson_date: date,
-        status: {
-          [Op.in]: ['confirmed', 'pending'] // Only confirmed and pending bookings block availability
-        }
-      },
-      attributes: ['id', 'lesson_date', 'start_time', 'end_time', 'status'],
-      order: [['start_time', 'ASC']]
-    });
-    
-    // Calculate duration_minutes for each booking (for frontend convenience)
-    const bookingsWithDuration = bookings.map(booking => {
-      const bookingData = booking.toJSON();
-      if (bookingData.start_time && bookingData.end_time) {
-        // Parse time strings (format: HH:MM:SS or HH:MM)
-        const startParts = bookingData.start_time.split(':').map(Number);
-        const endParts = bookingData.end_time.split(':').map(Number);
-        const startMinutes = startParts[0] * 60 + (startParts[1] || 0);
-        const endMinutes = endParts[0] * 60 + (endParts[1] || 0);
-        bookingData.duration_minutes = endMinutes - startMinutes;
-      } else {
-        bookingData.duration_minutes = 60; // Default to 60 minutes
-      }
-      return bookingData;
-    });
-
-    res.json({
-      success: true,
-      data: bookingsWithDuration
-    });
-  } catch (error) {
-    console.error('Availability check error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check availability'
-    });
-  }
-});
 
 // Get current user's bookings
 router.get('/', authenticateToken, async (req, res) => {
@@ -104,128 +30,7 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Public booking route (no authentication required)
-router.post('/public', validateGuestBooking, async (req, res) => {
-  try {
-    const { name, email, phone, date, time, notes, duration_minutes } = req.body;
-    
-    // Reject user_package_id if provided (guests cannot use packages)
-    if (req.body.user_package_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Guests cannot use packages. Please login to use a package.'
-      });
-    }
-
-    // Check if the booking date/time is in the past
-    try {
-      const timeWithSeconds = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-      const bookingDateTime = new Date(`${date}T${timeWithSeconds}`);
-      const now = new Date();
-
-      if (!isNaN(bookingDateTime.getTime()) && bookingDateTime <= now) {
-        return res.status(400).json({
-          success: false,
-          message: 'Cannot book lessons for past dates or times. Please select a future time slot.'
-        });
-      }
-    } catch (dateError) {
-      console.error('Date validation error:', dateError);
-    }
-
-    // Check if time slot is available (exclude cancelled bookings)
-    const existingBooking = await Booking.findOne({
-      where: {
-        lesson_date: date,
-        start_time: time,
-        status: {
-          [Op.ne]: 'cancelled'
-        }
-      }
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({
-        success: false,
-        message: 'This time slot is already booked. Please choose a different time.'
-      });
-    }
-
-    // Calculate end_time based on duration
-    const startTime = new Date(`2000-01-01T${time}:00`);
-    const endTime = new Date(startTime.getTime() + (duration_minutes || 60) * 60000);
-    const end_time = endTime.toTimeString().slice(0, 5);
-
-    const guest = { name: name.trim(), email, phone: phone || null };
-
-    // Create the booking with guest info stored directly (no user account created)
-    const booking = await Booking.create({
-      student_id: null,
-      guest_name: guest.name,
-      guest_email: guest.email,
-      guest_phone: guest.phone,
-      lesson_date: date,
-      start_time: time,
-      end_time: end_time,
-      lesson_type: 'driving',
-      instructor_id: null,
-      notes: notes || '',
-      status: 'pending',
-      package_id: null
-    });
-
-    // Send guest booking confirmation email
-    try {
-      // #region agent log
-      _agentLog(
-        'H6',
-        'backend/src/routes/bookings.js:POST /public',
-        'Attempting guest booking confirmation email',
-        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
-        'initial',
-      );
-      // #endregion
-      await emailService.sendGuestBookingConfirmationEmail(guest, booking);
-    } catch (emailError) {
-      console.error('Failed to send guest booking confirmation email:', emailError);
-      // Don't fail the booking if email fails
-    }
-
-    // Send notification email to admin
-    try {
-      // #region agent log
-      _agentLog(
-        'H7',
-        'backend/src/routes/bookings.js:POST /public',
-        'Attempting admin booking notification email',
-        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
-        'initial',
-      );
-      // #endregion
-      await emailService.sendAdminBookingNotification(guest, booking);
-    } catch (emailError) {
-      console.error('Failed to send admin booking notification:', emailError);
-      // Don't fail the booking if email fails
-    }
-
-    res.json({ 
-      success: true, 
-      data: {
-        ...booking.toJSON(),
-        booking_reference: booking.id
-      }
-    });
-  } catch (error) {
-    console.error('Public booking error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create booking',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Create booking (authenticated users)
+// Create booking
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { date, time, instructor_name, notes, duration_minutes, user_package_id, payment_method } = req.body;
@@ -291,6 +96,13 @@ router.post('/', authenticateToken, async (req, res) => {
         });
       }
 
+      if (!userPackage.hasRemainingLessons()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No lessons remaining in this package' 
+        });
+      }
+
       if (userPackage.isExpired()) {
         return res.status(400).json({ 
           success: false, 
@@ -318,17 +130,13 @@ router.post('/', authenticateToken, async (req, res) => {
       package_id: user_package_id || null
     });
 
+    // Deduct one lesson from the package if provided
+    if (userPackage) {
+      await userPackage.useLesson();
+    }
+
     // Send confirmation email to student
     try {
-      // #region agent log
-      _agentLog(
-        'H8',
-        'backend/src/routes/bookings.js:POST /',
-        'Attempting student booking confirmation email',
-        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
-        'initial',
-      );
-      // #endregion
       await emailService.sendBookingConfirmationEmail(req.user, booking);
     } catch (emailError) {
       console.error('Failed to send booking confirmation email:', emailError);
@@ -337,15 +145,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Send notification email to admin
     try {
-      // #region agent log
-      _agentLog(
-        'H9',
-        'backend/src/routes/bookings.js:POST /',
-        'Attempting admin booking notification email',
-        { bookingId: booking.id ? String(booking.id).slice(0, 16) : '' },
-        'initial',
-      );
-      // #endregion
       await emailService.sendAdminBookingNotification(req.user, booking);
     } catch (emailError) {
       console.error('Failed to send admin booking notification:', emailError);

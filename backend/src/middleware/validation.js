@@ -61,10 +61,20 @@ const sanitizeInput = (req, res, next) => {
 const validateRegistration = [
   sanitizeInput,
   
-  body('name')
+  body('first_name')
     .trim()
-    .isLength({ min: 2, max: 200 })
-    .withMessage('Name must be between 2 and 200 characters')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('First name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s\-']+$/)
+    .withMessage('First name can only contain letters, spaces, hyphens, and apostrophes')
+    .escape(),
+  
+  body('last_name')
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Last name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s\-']+$/)
+    .withMessage('Last name can only contain letters, spaces, hyphens, and apostrophes')
     .escape(),
   
   body('email')
@@ -213,6 +223,8 @@ const validateContact = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters')
+    .matches(/^[a-zA-Z\s\-']+$/)
+    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes')
     .escape(),
   
   body('email')
@@ -231,68 +243,6 @@ const validateContact = [
   handleValidationErrors
 ];
 
-// Guest booking validation (no authentication required)
-const validateGuestBooking = [
-  sanitizeInput,
-  
-  body('name')
-    .trim()
-    .notEmpty()
-    .withMessage('Name is required')
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters')
-    .escape(),
-  
-  body('email')
-    .isEmail()
-    .withMessage('Please provide a valid email address')
-    .normalizeEmail()
-    .isLength({ max: 255 })
-    .withMessage('Email address is too long'),
-  
-  body('phone')
-    .optional()
-    .matches(/^[\+]?[1-9][\d]{0,15}$/)
-    .withMessage('Please provide a valid phone number')
-    .isLength({ max: 20 })
-    .withMessage('Phone number is too long'),
-  
-  body('date')
-    .notEmpty()
-    .withMessage('Date is required')
-    .isISO8601()
-    .withMessage('Please provide a valid date'),
-  
-  body('time')
-    .notEmpty()
-    .withMessage('Time is required')
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .withMessage('Please provide a valid time in HH:MM format'),
-  
-  body('duration_minutes')
-    .optional()
-    .isInt({ min: 60, max: 120 })
-    .withMessage('Duration must be 60 or 90 minutes'),
-  
-  body('notes')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Notes cannot exceed 1000 characters')
-    .escape(),
-  
-  body('user_package_id')
-    .optional()
-    .custom((value) => {
-      if (value) {
-        throw new Error('Guests cannot use packages. Please login to use a package.');
-      }
-      return true;
-    }),
-  
-  handleValidationErrors
-];
-
 module.exports = {
   validateRegistration,
   validateLogin,
@@ -300,7 +250,6 @@ module.exports = {
   validateResetPassword,
   validateChangePassword,
   validateContact,
-  validateGuestBooking,
   sanitizeInput,
   handleValidationErrors
 };

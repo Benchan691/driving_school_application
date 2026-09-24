@@ -3,6 +3,7 @@ const passport = require('passport');
 const authController = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const {
+  validateRegistration,
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
@@ -12,6 +13,7 @@ const {
 const router = express.Router();
 
 // Public routes
+router.post('/register', validateRegistration, authController.register);
 router.post('/login', validateLogin, authController.login);
 router.post('/forgot-password', validateForgotPassword, authController.forgotPassword);
 router.post('/reset-password', validateResetPassword, authController.resetPassword);

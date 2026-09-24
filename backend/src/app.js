@@ -8,7 +8,7 @@ const passport = require('./config/passport');
 const { initDatabase } = require('./database/init');
 const redis = require('redis');
 const  RedisStore = require('connect-redis').default;
-// dotenv.config() removed - Docker handles environment variables via env_file
+require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const contactRoutes = require('./routes/contact');
@@ -16,8 +16,8 @@ const instructorRoutes = require('./routes/instructors');
 const packageRoutes = require('./routes/packages');
 const bookingRoutes = require('./routes/bookings');
 const adminBookingRoutes = require('./routes/admin.bookings');
+const adminUserRoutes = require('./routes/admin.users');
 const adminPaymentRoutes = require('./routes/admin.payments');
-const adminSettingsRoutes = require('./routes/admin.settings');
 const paymentRoutes = require('./routes/payments');
 
 const errorHandler = require('./middleware/errorHandler');
@@ -96,20 +96,13 @@ const corsOptions = {
     
     const allowedOrigins = [
       process.env.FRONTEND_URL || 'http://localhost:3000',
-      'http://localhost:3000',
       'https://localhost:3000',
       'http://localhost',
-      'http://localhost:5002',
       'https://thetruthdrivingschool.ca',
       'http://thetruthdrivingschool.ca',
-      'https://www.thetruthdrivingschool.ca',
-      'http://www.thetruthdrivingschool.ca',
     ];
     
-    // Allow Cloudflare tunnel URLs (temporary public URLs)
-    const isCloudflareTunnel = origin && origin.includes('.trycloudflare.com');
-    
-    if (allowedOrigins.includes(origin) || isCloudflareTunnel) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`CORS blocked request from origin: ${origin}`);
@@ -243,8 +236,8 @@ app.use('/api/packages', packageRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin/bookings', adminBookingRoutes);
+app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/payments', adminPaymentRoutes);
-app.use('/api/admin/settings', adminSettingsRoutes);
 
 // 404 handler
 app.use((req, res) => {

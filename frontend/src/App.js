@@ -12,18 +12,16 @@ import AboutUs from './components/pages/AboutUs';
 import Packages from './components/pages/Packages';
 import Contact from './components/pages/Contact';
 import Login from './components/auth/Login';
+import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import Profile from './components/auth/Profile';
 import AuthCallback from './pages/AuthCallback';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancelled from './pages/PaymentCancelled';
+import Dashboard from './components/pages/Dashboard';
 import AdminDashboard from './components/pages/AdminDashboard';
-import PublicBooking from './components/pages/PublicBooking';
-import BookingConfirmation from './components/pages/BookingConfirmation';
-import PrivacyPolicy from './components/pages/PrivacyPolicy';
-import TermsOfService from './components/pages/TermsOfService';
-import TestPreparation from './components/pages/TestPreparation';
+import Progress from './components/pages/Progress';
 import './styles/main.scss';
 
 function App() {
@@ -40,12 +38,8 @@ function App() {
               <Route path="/about" element={<AboutUs />} />
               <Route path="/packages" element={<Packages />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/book" element={<PublicBooking />} />
-              <Route path="/booking-confirmation" element={<BookingConfirmation />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/test-preparation" element={<TestPreparation />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
@@ -53,6 +47,22 @@ function App() {
               <Route path="/payment-cancelled" element={<PaymentCancelled />} />
               
               {/* Protected Routes */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/progress" 
+                element={
+                  <ProtectedRoute>
+                    <Progress />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/dashboard/admin" 
                 element={

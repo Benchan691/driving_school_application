@@ -230,19 +230,17 @@ curl http://localhost:3000
 - **Currency:** CAD (Canadian Dollars)
 - **Website:** https://thetruthdrivingschool.ca
 
-#### Live API Keys
+#### Stripe Configuration
 
-**Backend (Secret Key):**
+**Backend secret key:** configure the ignored `STRIPE_SECRET_KEY` environment variable.
 ```
-sk_live_YOUR_STRIPE_SECRET_KEY_HERE
-```
-
-**Frontend (Publishable Key):**
-```
-pk_live_YOUR_STRIPE_PUBLISHABLE_KEY_HERE
+[REDACTED — set STRIPE_SECRET_KEY in the ignored .env.production file]
 ```
 
-**⚠️ IMPORTANT:** Keep your live Stripe keys secure! Never commit them to Git. Store them in `.env.production` file which is gitignored.
+**Frontend publishable key:** configure `REACT_APP_STRIPE_PUBLISHABLE_KEY` for the frontend build.
+```
+[REDACTED — set REACT_APP_STRIPE_PUBLISHABLE_KEY for the build]
+```
 
 #### Package Pricing
 
@@ -873,4 +871,3 @@ docker exec -i driving_school_db psql -U postgres -d driving_school -c \
 **Last Updated:** October 9, 2025  
 **Version:** 2.0  
 **Status:** Production Ready ✅
-

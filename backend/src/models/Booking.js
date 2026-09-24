@@ -9,20 +9,8 @@ const Booking = sequelize.define('Booking', {
   },
   student_id: {
     type: DataTypes.UUID,
-    allowNull: true,
+    allowNull: false,
     field: 'student_id'
-  },
-  guest_name: {
-    type: DataTypes.STRING(200),
-    allowNull: true
-  },
-  guest_email: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  guest_phone: {
-    type: DataTypes.STRING(30),
-    allowNull: true
   },
   instructor_id: {
     type: DataTypes.UUID,
