@@ -7,7 +7,7 @@ const { Package, UserPackage } = require('../models');
 router.get('/', async (req, res) => {
   try {
     const packages = await Package.findAll({
-      order: [['is_popular', 'DESC'], ['price', 'ASC']]
+      order: [['created_at', 'ASC']]
     });
     
     res.json({
@@ -61,9 +61,9 @@ router.get('/available-for-booking', authenticateToken, async (req, res) => {
       order: [['purchase_date', 'DESC']]
     });
 
-    // Filter packages with remaining lessons and not expired
+    // Filter packages that are not expired
     const availablePackages = userPackages.filter(pkg => 
-      pkg.hasRemainingLessons() && !pkg.isExpired()
+      !pkg.isExpired()
     );
     
     res.json({

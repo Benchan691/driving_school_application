@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { motion } from 'framer-motion';
 import { FiMail, FiPhone, FiMapPin, FiClock, FiSend, FiCheck, FiUser, FiMessageSquare } from 'react-icons/fi';
 import { getContactInfo, getBusinessHours, getContactFormConfig } from '../../utils/schoolConfig';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Contact = () => {
+  const { user } = useAuth();
   const contactInfo = getContactInfo();
   const businessHours = getBusinessHours();
   const contactFormConfig = getContactFormConfig();
@@ -20,6 +22,18 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Auto-fill form when user is logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      }));
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -169,6 +183,20 @@ const Contact = () => {
               <h3>Send us a Message</h3>
               <p>Fill out the form below and we'll get back to you within 24 hours.</p>
             </div>
+
+            {user && (
+              <div style={{
+                background: '#dcfce7',
+                border: '2px solid #16a34a',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                marginBottom: '20px',
+                fontSize: '14px',
+                color: '#166534'
+              }}>
+                ✓ <strong>Logged in as {user.name || user.email}</strong> - Your information has been pre-filled. You can edit if needed.
+              </div>
+            )}
 
             {isSubmitted ? (
               <motion.div

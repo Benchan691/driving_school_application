@@ -287,52 +287,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register function
-  const register = async (userData) => {
-    dispatch({ type: AUTH_ACTIONS.LOGIN_START });
-
-    try {
-      const response = await fetch(`${API_BASE}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const { user, accessToken, refreshToken } = result.data;
-        
-        // Store tokens and user data
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        dispatch({
-          type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: { user, accessToken, refreshToken }
-        });
-
-        return { success: true };
-      } else {
-        dispatch({
-          type: AUTH_ACTIONS.LOGIN_FAILURE,
-          payload: result.message
-        });
-        return { success: false, error: result.message };
-      }
-    } catch (error) {
-      const errorMessage = 'Network error. Please check your connection.';
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: errorMessage
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
   // Update user profile
   const updateProfile = async (profileData) => {
     try {
@@ -405,7 +359,6 @@ export const AuthProvider = ({ children }) => {
   const value = {
     ...state,
     login,
-    register,
     logout,
     updateProfile,
     changePassword,

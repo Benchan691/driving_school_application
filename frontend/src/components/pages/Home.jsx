@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { FiUsers, FiBookOpen, FiMessageCircle, FiTag, FiHeart, FiChevronLeft, FiChevronRight, FiStar } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import homeContent from '../../content/home.json';
+import { getContactInfo } from '../../utils/schoolConfig';
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
   const dashboardPath = user?.user_type === 'admin' ? '/dashboard/admin' : '/dashboard';
+  const contactInfo = getContactInfo();
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -26,78 +29,46 @@ const Home = () => {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const reviews = homeContent.reviews.items;
 
-  // Refs for timers
-  const slideshowTimerRef = useRef(null);
-  const reviewTimerRef = useRef(null);
-
-  // Reset slideshow timer
-  const resetSlideshowTimer = useCallback(() => {
-    if (slideshowTimerRef.current) {
-      clearInterval(slideshowTimerRef.current);
-    }
-    slideshowTimerRef.current = setInterval(() => {
+  // Auto-advance slideshow with resettable timer
+  useEffect(() => {
+    const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
-    }, 5000);
-  }, [slideshowImages.length]);
+    }, 5000); // Change slide every 5 seconds
 
-  // Reset review timer
-  const resetReviewTimer = useCallback(() => {
-    if (reviewTimerRef.current) {
-      clearInterval(reviewTimerRef.current);
-    }
-    reviewTimerRef.current = setInterval(() => {
+    return () => clearInterval(timer);
+  }, [slideshowImages.length, currentSlide]); // Add currentSlide to reset timer on manual navigation
+
+  // Auto-advance reviews slider with resettable timer
+  useEffect(() => {
+    const timer = setInterval(() => {
       setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
-    }, 30000);
-  }, [reviews.length]);
+    }, 30000); // Change review every 30 seconds
 
-  // Auto-advance slideshow
-  useEffect(() => {
-    resetSlideshowTimer();
-    return () => {
-      if (slideshowTimerRef.current) {
-        clearInterval(slideshowTimerRef.current);
-      }
-    };
-  }, [resetSlideshowTimer]);
-
-  // Auto-advance reviews slider
-  useEffect(() => {
-    resetReviewTimer();
-    return () => {
-      if (reviewTimerRef.current) {
-        clearInterval(reviewTimerRef.current);
-      }
-    };
-  }, [resetReviewTimer]);
+    return () => clearInterval(timer);
+  }, [reviews.length, currentReviewIndex]); // Add currentReviewIndex to dependencies to reset timer
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
-    resetSlideshowTimer(); // Reset timer on manual navigation
   };
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + slideshowImages.length) % slideshowImages.length);
-    resetSlideshowTimer(); // Reset timer on manual navigation
   };
 
   const goToSlide = (index) => {
     setCurrentSlide(index);
-    resetSlideshowTimer(); // Reset timer on manual navigation
   };
 
   const nextReview = () => {
     setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
-    resetReviewTimer(); // Reset timer on manual navigation
   };
 
   const prevReview = () => {
     setCurrentReviewIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
-    resetReviewTimer(); // Reset timer on manual navigation
   };
 
   const goToReview = (index) => {
     setCurrentReviewIndex(index);
-    resetReviewTimer(); // Reset timer on manual navigation
   };
 
   // Render star rating
@@ -124,12 +95,21 @@ const Home = () => {
               <h1>{homeContent.hero.title}</h1>
               <p className="hero-subtitle">{homeContent.hero.subtitle}</p>
               <div className="hero-buttons">
-                <Link to={isAuthenticated ? dashboardPath : '/register'} className="btn btn-primary btn-lg">
+                <Link to={isAuthenticated ? dashboardPath : '/packages'} className="btn btn-primary btn-lg">
                   {homeContent.hero.primaryCtaText}
                 </Link>
                 <Link to="/packages" className="btn btn-outline btn-lg" onClick={scrollToTop}>
                   {homeContent.hero.secondaryCtaText}
                 </Link>
+                <a
+                  href={contactInfo.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-whatsapp btn-lg"
+                >
+                  <FaWhatsapp />
+                  WhatsApp us
+                </a>
               </div>
               <div className="hero-highlights">
                 {homeContent.hero.highlights.map((highlight, index) => (

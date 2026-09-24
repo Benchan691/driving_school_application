@@ -8,20 +8,12 @@ const User = sequelize.define('User', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  first_name: {
-    type: DataTypes.STRING(50),
+  name: {
+    type: DataTypes.STRING(200),
     allowNull: false,
     validate: {
       notEmpty: true,
-      len: [2, 50]
-    }
-  },
-  last_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      notEmpty: true,
-      len: [2, 50]
+      len: [2, 200]
     }
   },
   email: {
@@ -212,8 +204,7 @@ User.prototype.toJSON = function() {
 User.prototype.toPublicJSON = function() {
   return {
     id: this.id,
-    first_name: this.first_name,
-    last_name: this.last_name,
+    name: this.name,
     user_type: this.user_type,
     email_verified: this.email_verified
   };

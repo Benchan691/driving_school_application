@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { motion } from 'framer-motion';
-import { FiEdit3, FiTrash2, FiSave, FiX, FiRefreshCw, FiDollarSign } from 'react-icons/fi';
+import { FiTrash2, FiRefreshCw } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 
 const PaymentManagement = () => {
@@ -9,11 +9,8 @@ const PaymentManagement = () => {
   const token = useMemo(() => accessToken || localStorage.getItem('accessToken'), [accessToken]);
   
   const [payments, setPayments] = useState([]);
-  const [quotaStats, setQuotaStats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ lessons_used: 0 });
   
   // Filters
   const [filters, setFilters] = useState({
@@ -33,8 +30,7 @@ const PaymentManagement = () => {
       
       const searchTerm = filters.search.toLowerCase();
       const matchSearch = !searchTerm || 
-        payment.user?.first_name?.toLowerCase().includes(searchTerm) ||
-        payment.user?.last_name?.toLowerCase().includes(searchTerm) ||
+        payment.user?.name?.toLowerCase().includes(searchTerm) ||
         payment.user?.email?.toLowerCase().includes(searchTerm) ||
         payment.package_name?.toLowerCase().includes(searchTerm);
       
@@ -66,7 +62,6 @@ const PaymentManagement = () => {
       const data = await res.json();
       if (data.success) {
         setPayments(data.data.payments || []);
-        setQuotaStats(data.data.quotaStats || []);
       }
     } catch (e) {
       setError(e.message || 'Failed to load payments');
@@ -80,36 +75,6 @@ const PaymentManagement = () => {
       fetchPayments();
     }
   }, [token, fetchPayments]);
-
-  const startEdit = (payment) => {
-    setEditing(payment.id);
-    setEditForm({ lessons_used: payment.lessons_used });
-  };
-
-  const saveEdit = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/payments/${editing}/quota`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(editForm)
-      });
-      
-      const data = await res.json();
-      if (data.success) {
-        setPayments(prev => prev.map(p => p.id === editing ? data.data : p));
-        setEditing(null);
-        await fetchPayments(); // Refresh to get updated quota stats
-      } else {
-        alert('Failed to update quota: ' + (data.message || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Update quota error:', error);
-      alert('Failed to update quota. Please try again.');
-    }
-  };
 
   const deletePayment = async (id) => {
     if (!window.confirm('Are you sure you want to delete this payment record? This action cannot be undone.')) {
@@ -125,7 +90,7 @@ const PaymentManagement = () => {
       const data = await res.json();
       if (data.success) {
         setPayments(prev => prev.filter(p => p.id !== id));
-        await fetchPayments(); // Refresh to get updated quota stats
+        await fetchPayments();
       } else {
         alert('Failed to delete payment: ' + (data.message || 'Unknown error'));
       }
@@ -143,7 +108,7 @@ const PaymentManagement = () => {
   const getUserOptions = () => {
     const users = payments.map(p => ({
       id: p.user_id,
-      name: `${p.user?.first_name || ''} ${p.user?.last_name || ''}`.trim() || p.user?.email || 'Unknown'
+      name: p.user?.name || p.user?.email || 'Unknown'
     }));
     // Remove duplicates by user_id
     const uniqueUsers = users.filter((user, index, self) => 
@@ -162,47 +127,7 @@ const PaymentManagement = () => {
           transition={{ duration: 0.6 }}
         >
           <h1>Payment Management</h1>
-          <p>Manage payments and track package quotas</p>
-        </motion.div>
-
-        {/* Quota Statistics */}
-        <motion.div 
-          className="quota-stats"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <h3>Package Quota Statistics</h3>
-          <div className="stats-grid">
-            {quotaStats.map(stat => (
-              <div key={stat.package_name} className="stat-card">
-                <div className="stat-header">
-                  <FiDollarSign className="stat-icon" />
-                  <h4>{stat.package_name}</h4>
-                </div>
-                <div className="stat-content">
-                  <div className="stat-item">
-                    <span className="stat-label">Total Purchased:</span>
-                    <span className="stat-value">{stat.total_purchased || 0}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Lessons Used:</span>
-                    <span className="stat-value">{stat.total_used || 0}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Total Lessons:</span>
-                    <span className="stat-value">{stat.total_lessons || 0}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Remaining:</span>
-                    <span className="stat-value">
-                      {(stat.total_lessons || 0) - (stat.total_used || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p>Manage payments and user packages</p>
         </motion.div>
 
         {/* Filters */}
@@ -284,15 +209,13 @@ const PaymentManagement = () => {
                   <th>Package</th>
                   <th>Purchase Date</th>
                   <th>Price</th>
-                  <th>Lessons Used</th>
-                  <th>Lessons Remaining</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPayments.length === 0 && !loading && (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', color: '#64748b' }}>
+                    <td colSpan="5" style={{ textAlign: 'center', color: '#64748b' }}>
                       No payments found.
                     </td>
                   </tr>
@@ -302,7 +225,7 @@ const PaymentManagement = () => {
                     <td>
                       <div className="user-info">
                         <div className="user-name">
-                          {payment.user?.first_name} {payment.user?.last_name}
+                          {payment.user?.name || 'Unknown'}
                         </div>
                         <div className="user-email">{payment.user?.email}</div>
                       </div>
@@ -317,58 +240,14 @@ const PaymentManagement = () => {
                     </td>
                     <td>{new Date(payment.purchase_date).toLocaleDateString()}</td>
                     <td>${payment.purchase_price || 0}</td>
-                    <td>
-                      {editing === payment.id ? (
-                        <input 
-                          type="number" 
-                          min="0" 
-                          max={payment.total_lessons}
-                          value={editForm.lessons_used}
-                          onChange={(e) => setEditForm({ lessons_used: parseInt(e.target.value) || 0 })}
-                          className="input"
-                          style={{ width: '80px' }}
-                        />
-                      ) : (
-                        payment.lessons_used
-                      )}
-                    </td>
-                    <td>{payment.lessons_remaining}</td>
                     <td style={{ display: 'flex', gap: 6 }}>
-                      {editing === payment.id ? (
-                        <>
-                          <button 
-                            className="btn btn-sm btn-primary" 
-                            onClick={saveEdit}
-                            title="Save"
-                          >
-                            <FiSave />
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-ghost" 
-                            onClick={() => setEditing(null)}
-                            title="Cancel"
-                          >
-                            <FiX />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button 
-                            className="btn btn-sm btn-outline" 
-                            onClick={() => startEdit(payment)}
-                            title="Edit Quota"
-                          >
-                            <FiEdit3 />
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-ghost" 
-                            onClick={() => deletePayment(payment.id)}
-                            title="Delete"
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </>
-                      )}
+                      <button 
+                        className="btn btn-sm btn-ghost" 
+                        onClick={() => deletePayment(payment.id)}
+                        title="Delete"
+                      >
+                        <FiTrash2 />
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -141,7 +141,22 @@ router.post('/admin/:id/reply', authenticateToken, requireRole(['admin']), async
     res.json({ success: true, message: 'Reply sent successfully' });
   } catch (error) {
     console.error('Send contact reply failed:', error);
-    res.status(500).json({ success: false, message: 'Failed to send reply' });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to send reply';
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Email authentication failed. Please check your email credentials in the environment configuration. Make sure EMAIL_USER is your full Gmail address and EMAIL_PASS is an App Password (not your regular password).';
+    } else if (error.code === 'ECONNECTION') {
+      errorMessage = 'Failed to connect to email server. Please check your internet connection and email server settings.';
+    } else if (error.message) {
+      errorMessage = `Failed to send reply: ${error.message}`;
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

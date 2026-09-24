@@ -4,6 +4,7 @@
 @import 'pages/about';
 @import 'pages/packages';
 @import 'pages/dashboard';
+@import 'pages/test-preparation';
 @import 'components/timetable';
 
 // Reset and base styles
@@ -435,6 +436,19 @@ input, textarea, select {
   &:hover:not(:disabled) {
     background: $primary-color;
     color: $white;
+  }
+}
+
+.btn-whatsapp {
+  @extend .btn;
+  background: #25D366;
+  color: $white;
+  gap: $spacing-2;
+
+  &:hover:not(:disabled) {
+    background: #1ebe57;
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
   }
 }
 

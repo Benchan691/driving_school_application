@@ -31,9 +31,9 @@ The slideshow on the home page didn't reset the auto-advance timer when users cl
 - Poor user experience
 
 ### Solution:
-Used `useRef` to store timer and `useCallback` to create reset functions that are only called on manual navigation.
+Updated the slideshow `useEffect` to include `currentSlide` in the dependency array:
 
-**Before (Broken - caused infinite loop):**
+**Before:**
 ```javascript
 useEffect(() => {
   const timer = setInterval(() => {
@@ -41,40 +41,27 @@ useEffect(() => {
   }, 5000);
 
   return () => clearInterval(timer);
-}, [slideshowImages.length, currentSlide]); // BAD: Resets on every change, including auto-advance
+}, [slideshowImages.length]); // Only resets if array length changes (never)
 ```
 
-**After (Correct - uses ref and manual reset):**
+**After:**
 ```javascript
-const slideshowTimerRef = useRef(null);
-
-const resetSlideshowTimer = useCallback(() => {
-  if (slideshowTimerRef.current) {
-    clearInterval(slideshowTimerRef.current);
-  }
-  slideshowTimerRef.current = setInterval(() => {
+useEffect(() => {
+  const timer = setInterval(() => {
     setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
   }, 5000);
-}, [slideshowImages.length]);
 
-useEffect(() => {
-  resetSlideshowTimer();
-  return () => clearInterval(slideshowTimerRef.current);
-}, [resetSlideshowTimer]);
-
-const nextSlide = () => {
-  setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
-  resetSlideshowTimer(); // Only reset on manual navigation
-};
+  return () => clearInterval(timer);
+}, [slideshowImages.length, currentSlide]); // Resets whenever slide changes
 ```
 
 ### How It Works Now:
-1. Timer stored in `useRef` (doesn't cause re-renders)
-2. Auto-advance updates state but does NOT reset timer
-3. Manual navigation (next/prev/dots) calls `resetSlideshowTimer()`
-4. Timer clears and restarts, giving full 5 seconds before next auto-advance
+1. User clicks next/prev button → `currentSlide` changes
+2. `useEffect` sees dependency change → clears old timer
+3. New timer starts immediately → counts fresh 5 seconds
+4. Next auto-advance happens 5 seconds after last interaction
 
-**Result:** ✅ Timer only resets on manual navigation, not auto-advance ✅
+**Result:** ✅ Timer resets on every manual navigation, providing smooth UX
 
 ---
 

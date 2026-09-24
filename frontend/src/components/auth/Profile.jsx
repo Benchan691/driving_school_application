@@ -57,8 +57,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (user) {
-      setValue('first_name', user.first_name || '');
-      setValue('last_name', user.last_name || '');
+      setValue('name', user.name || '');
       setValue('phone', user.phone || '');
     }
   }, [user, setValue]);
@@ -177,50 +176,26 @@ const Profile = () => {
 
           {isEditing ? (
             <form id="profile-form" onSubmit={handleSubmit(handleProfileUpdate)} className="profile-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="first_name">First Name</label>
-                  <div className="input-wrapper">
-                    <FiUser className="input-icon" />
-                    <input
-                      type="text"
-                      id="first_name"
-                      {...register('first_name', {
-                        required: 'First name is required',
-                        minLength: {
-                          value: 2,
-                          message: 'First name must be at least 2 characters long'
-                        }
-                      })}
-                      className={errors.first_name ? 'error' : ''}
-                    />
-                  </div>
-                  {errors.first_name && (
-                    <span className="error-text">{errors.first_name.message}</span>
-                  )}
+              <div className="form-group">
+                <label htmlFor="name">Full Name</label>
+                <div className="input-wrapper">
+                  <FiUser className="input-icon" />
+                  <input
+                    type="text"
+                    id="name"
+                    {...register('name', {
+                      required: 'Name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters long'
+                      }
+                    })}
+                    className={errors.name ? 'error' : ''}
+                  />
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="last_name">Last Name</label>
-                  <div className="input-wrapper">
-                    <FiUser className="input-icon" />
-                    <input
-                      type="text"
-                      id="last_name"
-                      {...register('last_name', {
-                        required: 'Last name is required',
-                        minLength: {
-                          value: 2,
-                          message: 'Last name must be at least 2 characters long'
-                        }
-                      })}
-                      className={errors.last_name ? 'error' : ''}
-                    />
-                  </div>
-                  {errors.last_name && (
-                    <span className="error-text">{errors.last_name.message}</span>
-                  )}
-                </div>
+                {errors.name && (
+                  <span className="error-text">{errors.name.message}</span>
+                )}
               </div>
 
               <div className="form-group">
@@ -272,12 +247,8 @@ const Profile = () => {
                 <span className="info-value">{user.email}</span>
               </div>
               <div className="info-row">
-                <span className="info-label">First Name:</span>
-                <span className="info-value">{user.first_name}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Last Name:</span>
-                <span className="info-value">{user.last_name}</span>
+                <span className="info-label">Name:</span>
+                <span className="info-value">{user.name}</span>
               </div>
               <div className="info-row">
                 <span className="info-label">Phone:</span>

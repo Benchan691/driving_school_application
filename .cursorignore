@@ -1,0 +1,5 @@
+# Allow .env files for Cursor AI assistance
+!.env.development
+!.env.production
+!.env.local
+!.env

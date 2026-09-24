@@ -80,11 +80,15 @@ REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_live_...
 FRONTEND_URL=https://thetruthdrivingschool.ca
 REACT_APP_API_BASE=https://thetruthdrivingschool.ca
 
-# Email Configuration (optional)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
+# Email Configuration
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM="The Truth Driving School <your-email@gmail.com>"
+
+# Runtime settings encryption (required for admin email password updates)
+SETTINGS_ENCRYPTION_KEY=your-random-strong-secret
 
 # Redis (for brute force protection)
 REDIS_HOST=redis
@@ -230,17 +234,19 @@ curl http://localhost:3000
 - **Currency:** CAD (Canadian Dollars)
 - **Website:** https://thetruthdrivingschool.ca
 
-#### Stripe Configuration
+#### Live API Keys
 
-**Backend secret key:** configure the ignored `STRIPE_SECRET_KEY` environment variable.
+**Backend (Secret Key):**
 ```
-[REDACTED — set STRIPE_SECRET_KEY in the ignored .env.production file]
+sk_live_YOUR_STRIPE_SECRET_KEY_HERE
 ```
 
-**Frontend publishable key:** configure `REACT_APP_STRIPE_PUBLISHABLE_KEY` for the frontend build.
+**Frontend (Publishable Key):**
 ```
-[REDACTED — set REACT_APP_STRIPE_PUBLISHABLE_KEY for the build]
+pk_live_YOUR_STRIPE_PUBLISHABLE_KEY_HERE
 ```
+
+**⚠️ IMPORTANT:** Keep your live Stripe keys secure! Never commit them to Git. Store them in `.env.production` file which is gitignored.
 
 #### Package Pricing
 
@@ -666,20 +672,27 @@ UPDATE users SET password_hash = '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/Lew
 
 **Q: How do I add a new admin user?**
 ```bash
-# Via backend API
-curl -X POST http://localhost:5002/api/auth/register \
+# Option 1 (recommended): set ADMIN_EMAIL in .env/.env.production and restart backend.
+# The backend will auto-create that admin account on startup if it does not exist.
+
+# Option 2: manually promote an existing user in the database
+docker exec -i driving_school_db psql -U postgres -d driving_school -c \
+  "UPDATE users SET user_type = 'admin' WHERE email = 'existing-user@example.com';"
+```
+
+**Q: How do I update SMTP credentials from the admin dashboard?**
+```bash
+# Requires admin access token
+# Requires SETTINGS_ENCRYPTION_KEY configured on the backend
+
+curl -X PUT http://localhost:5002/api/admin/settings/email \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "newadmin@example.com",
-    "password": "SecurePassword123",
-    "firstName": "Admin",
-    "lastName": "User",
-    "phone": "1234567890"
+    "email_user": "school@example.com",
+    "email_from": "The Truth Driving School <school@example.com>",
+    "email_pass": "app-specific-password"
   }'
-
-# Then update user_type in database
-docker exec -i driving_school_db psql -U postgres -d driving_school -c \
-  "UPDATE users SET user_type = 'admin' WHERE email = 'newadmin@example.com';"
 ```
 
 **Q: Website is slow, how to optimize?**
@@ -868,6 +881,7 @@ docker exec -i driving_school_db psql -U postgres -d driving_school -c \
 
 ---
 
-**Last Updated:** October 9, 2025  
+**Last Updated:** May 6, 2026  
 **Version:** 2.0  
 **Status:** Production Ready ✅
+

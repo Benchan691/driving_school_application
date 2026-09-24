@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign } from 'react-icons/fi';
+import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign, FiXCircle, FiLayers } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import GoogleCalendarEmbed from '../common/GoogleCalendarEmbed';
 import PaymentManagement from './PaymentManagement';
+import PackageManagement from './PackageManagement';
 import '../../styles/pages/admin.scss';
 
 const AdminDashboard = () => {
@@ -14,10 +15,9 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, instructor_name: '', notes: '', status: 'scheduled', payment_method: 'Cash' });
+  const [form, setForm] = useState({ date: '', time: '', duration_minutes: 60, notes: '', status: 'scheduled' });
 
-  const [view, setView] = useState('bookings'); // bookings | users | contacts | timetable | payments
-  const [users, setUsers] = useState([]);
+  const [view, setView] = useState('bookings'); // bookings | contacts | timetable | payments | packages | settings
   const [contacts, setContacts] = useState([]);
   const [messageModal, setMessageModal] = useState({ open: false, record: null });
   const [replyModal, setReplyModal] = useState({ open: false, record: null });
@@ -26,10 +26,15 @@ const AdminDashboard = () => {
   const [rejectModal, setRejectModal] = useState({ open: false, booking: null });
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
+  const [verifying, setVerifying] = useState(null); // Track which booking is being verified
+
+  // Email settings state (admin)
+  const [emailSettings, setEmailSettings] = useState({ email_user: '', email_from: '', email_pass: '' });
+  const [emailSettingsMeta, setEmailSettingsMeta] = useState({ has_password: false, source: '', settings_key_present: false });
+  const [savingEmailSettings, setSavingEmailSettings] = useState(false);
 
   // Filters
   const [bookingFilters, setBookingFilters] = useState({ status: 'all', q: '', dateFrom: '', dateTo: '' });
-  const [userFilters, setUserFilters] = useState({ role: 'all', active: 'all', verified: 'all', q: '' });
   const [contactFilters, setContactFilters] = useState({ status: 'all', q: '' });
 
   // Derived filtered data
@@ -54,15 +59,6 @@ const AdminDashboard = () => {
     });
   }, [bookings, bookingFilters]);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const matchRole = userFilters.role === 'all' || u.user_type === userFilters.role;
-      const q = userFilters.q.trim().toLowerCase();
-      const matchQ = !q || [`${u.first_name} ${u.last_name}`, u.email || '', String(u.id)].some(v => String(v).toLowerCase().includes(q));
-      return matchRole && matchQ;
-    });
-  }, [users, userFilters]);
-
   const filteredContacts = useMemo(() => {
     return contacts.filter(m => {
       const matchStatus = contactFilters.status === 'all' || m.status === contactFilters.status;
@@ -81,16 +77,18 @@ const AdminDashboard = () => {
         if (!res.ok) { const txt = await res.text(); throw new Error(`${res.status} ${res.statusText} - ${txt}`); }
         const data = await res.json();
         setBookings(Array.isArray(data.data) ? data.data : []);
-      } else if (view === 'users') {
-        const resU = await fetch(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!resU.ok) { const txt = await resU.text(); throw new Error(`${resU.status} ${resU.statusText} - ${txt}`); }
-        const dataU = await resU.json();
-        setUsers(Array.isArray(dataU.data) ? dataU.data : []);
       } else if (view === 'contacts') {
         const resC = await fetch(`${API_BASE}/api/contact/admin`, { headers: { Authorization: `Bearer ${token}` } });
         if (!resC.ok) { const txt = await resC.text(); throw new Error(`${resC.status} ${resC.statusText} - ${txt}`); }
         const dataC = await resC.json();
         setContacts(Array.isArray(dataC.data) ? dataC.data : []);
+      } else if (view === 'settings') {
+        const resS = await fetch(`${API_BASE}/api/admin/settings/email`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!resS.ok) { const txt = await resS.text(); throw new Error(`${resS.status} ${resS.statusText} - ${txt}`); }
+        const dataS = await resS.json();
+        const s = dataS?.data || {};
+        setEmailSettings({ email_user: s.email_user || '', email_from: s.email_from || '', email_pass: '' });
+        setEmailSettingsMeta({ has_password: !!s.has_password, source: s.source || '', settings_key_present: !!s.settings_key_present });
       }
     } catch (e) {
       setError(e.message || 'Failed to load bookings');
@@ -102,46 +100,69 @@ const AdminDashboard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (token) fetchAll(); }, [token, view]); // Remove fetchAll dependency to prevent infinite loop
 
+  const saveEmailSettings = async () => {
+    setSavingEmailSettings(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/settings/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(emailSettings),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        const s = data?.data || {};
+        setEmailSettings({ email_user: s.email_user || '', email_from: s.email_from || '', email_pass: '' });
+        setEmailSettingsMeta({ has_password: !!s.has_password, source: s.source || '', settings_key_present: !!s.settings_key_present });
+        alert('Email settings updated.');
+      } else {
+        alert(data?.message || 'Failed to update email settings');
+      }
+    } catch (e) {
+      alert(e?.message || 'Failed to update email settings');
+    } finally {
+      setSavingEmailSettings(false);
+    }
+  };
+
   const startEdit = (b) => {
     setEditing(b.id);
-    setForm({ date: b.date, time: b.time, duration_minutes: b.duration_minutes || 60, instructor_name: b.instructor_name || '', notes: b.notes || '', status: b.status, payment_method: b.payment_method || 'Cash' });
+    const dateVal = b.lesson_date || b.date;
+    const timeVal = b.start_time ? (typeof b.start_time === 'string' ? b.start_time.slice(0, 5) : b.start_time) : b.time;
+    setForm({ date: dateVal, time: timeVal, duration_minutes: b.duration_minutes || 60, notes: b.notes || '', status: b.status });
   };
 
   const saveEdit = async () => {
-    if (String(editing).startsWith('user-')) {
-      const userId = String(editing).replace('user-','');
-      const payload = {
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: form.email,
-        user_type: form.user_type,
-      };
-      const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setUsers(prev => prev.map(u => u.id === data.data.id ? data.data : u));
-        setEditing(null);
-      }
-    } else {
-      const res = await fetch(`${API_BASE}/api/admin/bookings/${editing}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setBookings((prev) => prev.map(b => b.id === editing ? data.data : b));
-        setEditing(null);
-      }
+    const res = await fetch(`${API_BASE}/api/admin/bookings/${editing}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(form)
+    });
+    const data = await res.json();
+    if (data?.success) {
+      setBookings((prev) => prev.map(b => b.id === editing ? data.data : b));
+      setEditing(null);
     }
   };
 
   const verify = async (id) => {
-    const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/verify`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    if (data?.success) setBookings((prev) => prev.map(b => b.id === id ? data.data : b));
+    // Prevent double-clicks
+    if (verifying === id) return;
+    
+    setVerifying(id);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/verify`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data?.success) {
+        setBookings((prev) => prev.map(b => b.id === id ? data.data : b));
+      } else {
+        alert(data.message || 'Failed to verify booking');
+      }
+    } catch (error) {
+      console.error('Verify booking error:', error);
+      alert('Failed to verify booking. Please try again.');
+    } finally {
+      setVerifying(null);
+    }
   };
 
   // const remove = async (id) => {
@@ -262,16 +283,21 @@ const AdminDashboard = () => {
           <p>Manage and verify bookings</p>
         </motion.div>
 
-        <div className="admin-actions" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <div className="admin-actions__tabs">
+        <div className="admin-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className={`btn ${view==='bookings' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('bookings')}>Bookings</button>
-            <button className={`btn ${view==='users' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('users')}>Users</button>
             <button className={`btn ${view==='contacts' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('contacts')}>Contacts</button>
             <button className={`btn ${view==='payments' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('payments')}>
               <FiDollarSign /> Payments
             </button>
+            <button className={`btn ${view==='packages' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('packages')}>
+              <FiLayers /> Packages
+            </button>
+            <button className={`btn ${view==='settings' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('settings')}>
+              <FiMail /> Email Settings
+            </button>
             <button className={`btn ${view==='timetable' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('timetable')}>
-              <FiCalendar /> Calendar
+              <FiCalendar /> Google Calendar
             </button>
           </div>
           <button className="btn btn-outline" onClick={fetchAll}><FiRefreshCw /> Refresh</button>
@@ -308,32 +334,60 @@ const AdminDashboard = () => {
             <table className="table table--styled table--admin">
             <thead>
               <tr>
+                <th>Reference</th>
                 <th>User</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Notes</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>Duration</th>
-                <th>Payment Method</th>
-                <th>Instructor</th>
                 <th>Status</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredBookings.length === 0 && !loading && (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
+                  <td colSpan="11" style={{ textAlign: 'center', color: '#64748b' }}>No bookings found.</td>
                 </tr>
               )}
-              {filteredBookings.map(b => (
-                <tr key={b.id} style={editing === b.id ? { 
-                  background: 'linear-gradient(to right, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.08))',
-                  boxShadow: 'inset 0 0 0 1px rgba(37, 99, 235, 0.3)'
-                } : {}}>
+              {filteredBookings.map(b => {
+                // Format reference number
+                const bookingReference = b.booking_reference || b.id || 'N/A';
+                const referenceDisplay = typeof bookingReference === 'string' 
+                  ? bookingReference.substring(0, 8).toUpperCase()
+                  : bookingReference.toString().substring(0, 8).toUpperCase();
+                
+                return (
+                  <tr key={b.id} style={editing === b.id ? { 
+                    background: 'linear-gradient(to right, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.08))',
+                    boxShadow: 'inset 0 0 0 1px rgba(37, 99, 235, 0.3)'
+                  } : {}}>
                   <td>
-                    <button className="link" onClick={()=>{ setView('users'); setUsers(prev => prev); }}>
-                      {b.student ? `${b.student.first_name} ${b.student.last_name}` : `User #${b.student_id?.slice(0,8)}`}
-                    </button>
+                    <code style={{
+                      background: '#f1f5f9',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontFamily: 'monospace',
+                      color: '#475569',
+                      fontWeight: '600'
+                    }}>
+                      {referenceDisplay}
+                    </code>
                   </td>
+                  <td>
+                    {b.student
+                      ? b.student.name
+                      : b.guest_name
+                        ? <>{b.guest_name} <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Guest</span></>
+                        : `User #${b.student_id?.slice(0,8)}`}
+                  </td>
+                  <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.email || b.guest_email || '-'}</td>
+                  <td style={{ fontSize: '13px', color: '#374151' }}>{b.student?.phone || b.guest_phone || '-'}</td>
+                  <td title={b.notes || ''} style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.notes ? (b.notes.length > 50 ? `${b.notes.slice(0, 50)}…` : b.notes) : '-'}</td>
                   <td>{editing === b.id ? (
                     <input 
                       type="date" 
@@ -378,50 +432,6 @@ const AdminDashboard = () => {
                       <option value={90}>1.5h</option>
                     </select>
                   ) : `${b.duration_minutes || 60}m`}</td>
-                  <td>
-                    {editing === b.id ? (
-                      <select 
-                        value={form.payment_method} 
-                        onChange={(e)=>setForm({...form, payment_method: e.target.value})}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          border: '2px solid #e5e7eb',
-                          fontSize: '13px',
-                          fontWeight: '500'
-                        }}
-                      >
-                        <option value="Cash">Cash</option>
-                        <option value="Paid Online">Paid Online</option>
-                      </select>
-                    ) : (
-                      <span style={{ 
-                        background: b.payment_method === 'Paid Online' ? '#10b981' : '#f59e0b', 
-                        color: 'white', 
-                        padding: '4px 10px', 
-                        borderRadius: '12px', 
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        display: 'inline-block'
-                      }}>
-                        {b.payment_method || 'Cash'}
-                      </span>
-                    )}
-                  </td>
-                  <td>{editing === b.id ? (
-                    <input 
-                      type="text" 
-                      value={form.instructor_name} 
-                      onChange={(e)=>setForm({...form, instructor_name: e.target.value})}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        border: '2px solid #e5e7eb',
-                        fontSize: '13px',
-                        fontWeight: '500'
-                      }}
-                    />
-                  ) : (b.instructor_name || '-')}</td>
                   <td>{editing === b.id ? (
                     <select 
                       value={form.status} 
@@ -454,6 +464,7 @@ const AdminDashboard = () => {
                       )}
                     </div>
                   )}</td>
+                  <td style={{ fontSize: '12px', color: '#64748b' }}>{b.created_at ? new Date(b.created_at).toLocaleDateString(undefined, { dateStyle: 'short' }) : '-'}</td>
                   <td style={{ display: 'flex', gap: 6 }}>
                     {editing === b.id ? (
                       <button className="btn btn-sm btn-primary" onClick={saveEdit} title="Save">
@@ -462,8 +473,28 @@ const AdminDashboard = () => {
                     ) : (
                       <>
                         {/* Only show verify/reject if status is 'pending' */}
-                        {b.status === 'pending' && <button className="btn btn-sm btn-outline" onClick={()=>verify(b.id)} title="Verify"><FiCheckCircle /></button>}
-                        {b.status === 'pending' && <button className="btn btn-sm btn-ghost" onClick={()=>openRejectModal(b)} title="Reject" style={{color: '#dc2626'}}><FiTrash2 /></button>}
+                        {b.status === 'pending' && (
+                          <button 
+                            className="btn btn-sm btn-outline" 
+                            onClick={()=>verify(b.id)} 
+                            title="Verify"
+                            disabled={verifying === b.id}
+                            style={{ opacity: verifying === b.id ? 0.6 : 1, cursor: verifying === b.id ? 'not-allowed' : 'pointer' }}
+                          >
+                            {verifying === b.id ? <FiRefreshCw className="animate-spin" /> : <FiCheckCircle />}
+                          </button>
+                        )}
+                        {b.status === 'pending' && (
+                          <button 
+                            className="btn btn-sm btn-ghost" 
+                            onClick={()=>openRejectModal(b)} 
+                            title="Reject" 
+                            style={{color: '#dc2626'}}
+                            disabled={verifying === b.id}
+                          >
+                            <FiXCircle />
+                          </button>
+                        )}
                         
                         {/* Show delete button after booking is processed (confirmed or cancelled) */}
                         {(b.status === 'confirmed' || b.status === 'cancelled' || b.status === 'completed') && (
@@ -478,7 +509,10 @@ const AdminDashboard = () => {
                                 });
                                 const data = await res.json();
                                 if (data?.success) {
-                                  setBookings(prev => prev.filter(booking => booking.id !== b.id));
+                                  setBookings(prev => {
+                                    const next = prev.filter(booking => booking.id !== b.id);
+                                    return next;
+                                  });
                                   alert('Booking deleted successfully');
                                 } else {
                                   alert(data.message || 'Failed to delete booking');
@@ -499,109 +533,14 @@ const AdminDashboard = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
             </table>
           </div>
         </div>
         )}
 
-        {view === 'users' && (
-        <div className="table-card" style={{ marginTop: 12 }}>
-          <div className="table-filters" style={{ display:'flex', gap:8, padding: '8px 8px 0 8px', flexWrap:'wrap' }}>
-            <select value={userFilters.role} onChange={(e)=>setUserFilters({ ...userFilters, role: e.target.value })}>
-              <option value="all">All roles</option>
-              <option value="student">student</option>
-              <option value="instructor">instructor</option>
-              <option value="admin">admin</option>
-            </select>
-            <input className="input" placeholder="Search name/email/id" value={userFilters.q} onChange={(e)=>setUserFilters({ ...userFilters, q: e.target.value })} />
-          </div>
-          <div className="table-responsive">
-            <table className="table table--styled table--admin">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length === 0 && !loading && (
-                  <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: '#64748b' }}>No users found.</td>
-                  </tr>
-                )}
-                {filteredUsers.map((u, index) => {
-                  const isEditing = editing === `user-${u.id}`;
-                  return (
-                  <tr key={u.id}>
-                    <td>{index + 1}</td>
-                    <td>
-                      {isEditing ? (
-                        <div style={{ display:'flex', gap:6 }}>
-                          <input className="input" type="text" value={form.first_name} onChange={(e)=>setForm({...form, first_name: e.target.value})} placeholder="First" />
-                          <input className="input" type="text" value={form.last_name} onChange={(e)=>setForm({...form, last_name: e.target.value})} placeholder="Last" />
-                        </div>
-                      ) : (
-                        <>{u.first_name} {u.last_name}</>
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input className="input" type="email" value={form.email} onChange={(e)=>setForm({...form, email: e.target.value})} />
-                      ) : u.email}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <select className="input" value={form.user_type} onChange={(e)=>setForm({...form, user_type: e.target.value})}>
-                          <option value="student">student</option>
-                          <option value="instructor">instructor</option>
-                          <option value="admin">admin</option>
-                        </select>
-                      ) : u.user_type}
-                    </td>
-                    <td>{new Date(u.createdAt || u.created_at).toLocaleDateString()}</td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      {isEditing ? (
-                        <button className="btn btn-sm btn-primary" onClick={saveEdit} title="Save">
-                          <FiSave />
-                        </button>
-                      ) : (
-                        <>
-                          <button className="btn btn-sm btn-outline" onClick={()=>{
-                            setEditing(`user-${u.id}`);
-                            setForm({
-                              date: '', time: '', duration_minutes: 60, instructor_name: '', notes: '', status: 'scheduled',
-                              first_name: u.first_name,
-                              last_name: u.last_name,
-                              email: u.email,
-                              user_type: u.user_type,
-                            });
-                          }} title="Edit">
-                            <FiEdit3 />
-                          </button>
-                          <button className="btn btn-sm btn-ghost" onClick={async()=>{
-                            if (!window.confirm('Delete this user?')) return;
-                            const res = await fetch(`${API_BASE}/api/admin/users/${u.id}`, { method:'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                            const data = await res.json();
-                            if (data?.success) setUsers(prev => prev.filter(x => x.id !== u.id));
-                          }} title="Delete">
-                            <FiTrash2 />
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        )}
 
         {view === 'contacts' && (
         <div className="table-card" style={{ marginTop: 12 }}>
@@ -693,6 +632,64 @@ const AdminDashboard = () => {
 
         {view === 'payments' && (
           <PaymentManagement />
+        )}
+
+        {view === 'packages' && (
+          <PackageManagement token={token} />
+        )}
+
+        {view === 'settings' && (
+          <div className="table-card settings-card">
+            <div className="settings-content">
+              <h3 className="settings-title">Email (Gmail) Settings</h3>
+              <p className="settings-description">
+                Update the Gmail app password used to send booking emails. The password is stored encrypted on the server.
+              </p>
+
+              {!emailSettingsMeta.settings_key_present && (
+                <div className="alert alert-error settings-alert">
+                  Server encryption key is missing. Set <code>SETTINGS_ENCRYPTION_KEY</code> on the server, then refresh this page.
+                </div>
+              )}
+
+              <div className="settings-form-grid">
+                <label className="settings-field">
+                  <div className="settings-label">Gmail address (EMAIL_USER)</div>
+                  <input className="input" value={emailSettings.email_user} onChange={(e)=>setEmailSettings({ ...emailSettings, email_user: e.target.value })} placeholder="thetruthdrivingschool@gmail.com" />
+                </label>
+
+                <label className="settings-field">
+                  <div className="settings-label">From address (EMAIL_FROM)</div>
+                  <input className="input" value={emailSettings.email_from} onChange={(e)=>setEmailSettings({ ...emailSettings, email_from: e.target.value })} placeholder="thetruthdrivingschool@gmail.com" />
+                </label>
+
+                <label className="settings-field">
+                  <div className="settings-label">
+                    Gmail App Password {emailSettingsMeta.has_password ? '(currently set)' : '(not set)'}
+                  </div>
+                  <input
+                    className="input"
+                    type="password"
+                    value={emailSettings.email_pass}
+                    onChange={(e)=>setEmailSettings({ ...emailSettings, email_pass: e.target.value })}
+                    placeholder="16-character app password"
+                  />
+                  <div className="settings-meta">
+                    Source: <strong>{emailSettingsMeta.source || '-'}</strong>
+                  </div>
+                </label>
+
+                <div className="settings-actions">
+                  <button className="btn btn-primary" onClick={saveEmailSettings} disabled={savingEmailSettings || !emailSettingsMeta.settings_key_present}>
+                    {savingEmailSettings ? 'Saving…' : 'Save Email Settings'}
+                  </button>
+                  <button className="btn btn-outline" onClick={fetchAll} disabled={loading}>
+                    <FiRefreshCw /> Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {view === 'timetable' && (
@@ -851,7 +848,7 @@ const AdminDashboard = () => {
                     </>
                   ) : (
                     <>
-                      <FiTrash2 />
+                      <FiXCircle />
                       Reject Booking
                     </>
                   )}
@@ -866,3 +863,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

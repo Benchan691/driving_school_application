@@ -161,6 +161,7 @@ Required in `.env` file:
 - `FRONTEND_URL` - Production URL
 - `REDIS_HOST` - Redis host
 - `SESSION_SECRET` - Session secret
+- `SETTINGS_ENCRYPTION_KEY` - Key used to encrypt admin-managed system settings (required to store email passwords in DB)
 
 [View Full Configuration →](docs/Guide.md#environment-setup)
 
@@ -220,7 +221,7 @@ docker exec -i driving_school_db pg_dump -U postgres driving_school > backup.sql
 ## 📊 Features
 
 ### Student Features
-- ✅ Online registration & login
+- ✅ Secure login
 - ✅ Browse & purchase lesson packages
 - ✅ Stripe payment integration
 - ✅ Book driving lessons
@@ -228,11 +229,11 @@ docker exec -i driving_school_db pg_dump -U postgres driving_school > backup.sql
 - ✅ Email receipts & confirmations
 
 ### Admin Features
-- ✅ User management
 - ✅ Booking management
 - ✅ Payment tracking
 - ✅ Package management
 - ✅ Instructor management
+- ✅ Email settings management (encrypted at rest)
 - ✅ Analytics & reporting
 
 ### Technical Features
@@ -317,4 +318,4 @@ Private - The Truth Driving School
 ---
 
 **Built with ❤️ for The Truth Driving School**  
-**Last Updated:** October 9, 2025
+**Last Updated:** May 6, 2026

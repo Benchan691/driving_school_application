@@ -36,14 +36,10 @@ const Header = () => {
           <nav className="nav-desktop">
             <Link to="/" className="nav-link">Home</Link>
             <Link to="/packages" className="nav-link" onClick={scrollToTop}>Packages</Link>
-          
+            <Link to="/book" className="nav-link" onClick={scrollToTop} style={{display: 'inline-block'}}>Book a Lesson</Link>
             <Link to="/contact" className="nav-link" onClick={scrollToTop}>Contact</Link>
             {isAuthenticated && (
-              user?.user_type === 'admin' ? (
-                <Link to="/dashboard/admin" className="nav-link">Admin</Link>
-              ) : (
-                <Link to="/dashboard" className="nav-link">Dashboard</Link>
-              )
+              <Link to="/dashboard/admin" className="nav-link">Admin</Link>
             )}
           </nav>
 
@@ -63,8 +59,7 @@ const Header = () => {
               </div>
             ) : (
               <div className="auth-buttons">
-                <Link to="/login" className="btn btn-outline">Login</Link>
-                <Link to="/register" className="btn btn-primary">Sign Up</Link>
+                <Link to="/login" className="btn btn-outline">Admin Login</Link>
               </div>
             )}
           </div>
@@ -75,17 +70,19 @@ const Header = () => {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+          {/* Mobile Navigation */}
         {isMenuOpen && (
           <nav className="nav-mobile">
             <Link to="/" className="nav-link" onClick={toggleMenu}>Home</Link>
             <Link to="/packages" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>Packages</Link>
-            
+            <Link to="/book" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>
+              Book a Lesson
+            </Link>
             <Link to="/contact" className="nav-link" onClick={() => { toggleMenu(); scrollToTop(); }}>Contact</Link>
             
             {isAuthenticated ? (
               <div className="mobile-auth">
-                <Link to={user?.user_type === 'admin' ? '/dashboard/admin' : '/dashboard'} className="nav-link" onClick={toggleMenu}>{user?.user_type === 'admin' ? 'Admin' : 'Dashboard'}</Link>
+                <Link to="/dashboard/admin" className="nav-link" onClick={toggleMenu}>Admin</Link>
                 
                 <button onClick={handleLogout} className="logout-btn-mobile">
                   <FiLogOut />
@@ -94,8 +91,7 @@ const Header = () => {
               </div>
             ) : (
               <div className="mobile-auth">
-                <Link to="/login" className="nav-link" onClick={toggleMenu}>Login</Link>
-                <Link to="/register" className="nav-link" onClick={toggleMenu}>Sign Up</Link>
+                <Link to="/login" className="nav-link" onClick={toggleMenu}>Admin Login</Link>
               </div>
             )}
           </nav>

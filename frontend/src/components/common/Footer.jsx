@@ -5,7 +5,6 @@ import {
   getSchoolInfo, 
   getContactInfo, 
   getSocialMedia, 
-  getServices, 
   getFullCopyrightText 
 } from '../../utils/schoolConfig';
 import './Footer.scss';
@@ -14,7 +13,6 @@ const Footer = () => {
   const schoolInfo = getSchoolInfo();
   const contactInfo = getContactInfo();
   const socialMedia = getSocialMedia();
-  const services = getServices();
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -36,21 +34,11 @@ const Footer = () => {
           <div className="footer-section">
             <h4>Quick Links</h4>
             <ul>
-              <li><Link to="/">Home</Link></li>
+              <li><Link to="/" onClick={scrollToTop}>Home</Link></li>
               <li><Link to="/about" onClick={scrollToTop}>About Us</Link></li>
               <li><Link to="/packages" onClick={scrollToTop}>Packages</Link></li>
+              <li><Link to="/book" onClick={scrollToTop}>Book a Lesson</Link></li>
               <li><Link to="/contact" onClick={scrollToTop}>Contact</Link></li>
-            </ul>
-          </div>
-
-          <div className="footer-section">
-            <h4>Services</h4>
-            <ul>
-              {services.map((service, index) => (
-                <li key={index}>
-                  <a href={`#${service.id}`}>{service.name}</a>
-                </li>
-              ))}
             </ul>
           </div>
 

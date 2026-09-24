@@ -1,62 +1,58 @@
 import React from 'react';
-import { FiCalendar, FiExternalLink } from 'react-icons/fi';
 import '../../styles/components/google-calendar-embed.scss';
 
 const GoogleCalendarEmbed = () => {
-  const embedUrl = process.env.REACT_APP_GOOGLE_CALENDAR_EMBED_URL?.trim();
-  let isValidEmbedUrl = false;
+  const configuredUrl = process.env.REACT_APP_GOOGLE_CALENDAR_EMBED_URL || '';
+  let calendarUrl = null;
 
   try {
-    const parsedUrl = new URL(embedUrl);
-    isValidEmbedUrl = parsedUrl.protocol === 'https:'
-      && parsedUrl.hostname === 'calendar.google.com'
-      && parsedUrl.pathname === '/calendar/embed';
+    const parsedUrl = new URL(configuredUrl);
+    if (
+      parsedUrl.protocol === 'https:' &&
+      parsedUrl.hostname === 'calendar.google.com' &&
+      parsedUrl.pathname === '/calendar/embed' &&
+      parsedUrl.searchParams.has('src')
+    ) {
+      calendarUrl = parsedUrl.toString();
+    }
   } catch (_) {
-    // Render the configuration message below when the build-time setting is absent or invalid.
+    // Show the configuration message below when the build-time URL is missing or invalid.
   }
 
   return (
-    <section className="google-calendar" aria-labelledby="google-calendar-title">
-      <header className="google-calendar__header">
-        <div className="google-calendar__heading">
-          <span className="google-calendar__icon" aria-hidden="true"><FiCalendar /></span>
-          <div>
-            <h2 id="google-calendar-title">School Calendar</h2>
-            <p>View the school calendar. Website bookings are managed separately.</p>
-          </div>
+    <section className="google-calendar-embed" aria-labelledby="google-calendar-title">
+      <header className="google-calendar-embed__header">
+        <div>
+          <h2 id="google-calendar-title">School Calendar</h2>
+          <p>
+            View the school calendar. Website bookings are managed separately and do not sync to Google Calendar.
+          </p>
+          <p className="google-calendar-embed__access-note">
+            Sign in with a Google account that has been given access to this calendar.
+          </p>
         </div>
-        {isValidEmbedUrl && (
-          <a
-            className="google-calendar__open-link"
-            href={embedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FiExternalLink aria-hidden="true" /> Open calendar
+        {calendarUrl && (
+          <a href={calendarUrl} target="_blank" rel="noreferrer">
+            Open in Google Calendar
           </a>
         )}
       </header>
 
-      {isValidEmbedUrl ? (
-        <div className="google-calendar__frame-wrap">
+      {calendarUrl ? (
+        <div className="google-calendar-embed__frame-wrap">
           <iframe
-            className="google-calendar__frame"
-            src={embedUrl}
-            title="The Truth Driving School Google Calendar"
+            title="Driving school Google Calendar"
+            src={calendarUrl}
             loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
+            referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
           />
         </div>
       ) : (
-        <div className="google-calendar__unavailable" role="status">
-          The Google Calendar embed is not configured. Set the production calendar URL and rebuild the website.
-        </div>
+        <p className="google-calendar-embed__message" role="alert">
+          Google Calendar is not configured for this build.
+        </p>
       )}
-
-      <p className="google-calendar__privacy-note">
-        Sign in to a Google account that has been granted access to this private calendar. Calendar access is controlled by Google.
-      </p>
     </section>
   );
 };

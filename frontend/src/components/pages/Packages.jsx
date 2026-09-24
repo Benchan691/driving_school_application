@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiTruck, FiRotateCcw, FiLayers, FiFileText, FiCheck, FiStar, FiCreditCard } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PaymentModal from '../payment/PaymentModal';
 import toast from 'react-hot-toast';
@@ -9,13 +9,12 @@ import { API_BASE } from '../../utils/apiBase';
 
 const Packages = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Static content (no need for state)
-  const content = {
+  const [content, setContent] = useState({
     page: {
       title: "Driving Lesson Packages",
       subtitle: "Choose the perfect package for your driving journey. Flexible options designed to fit your learning needs and schedule."
@@ -25,7 +24,7 @@ const Packages = () => {
       text: "Our experienced instructors can help you select the perfect package based on your driving experience and goals. Contact us for personalized recommendations.",
       buttonText: "Contact Us"
     }
-  };
+  });
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -59,7 +58,11 @@ const Packages = () => {
             description: pkg.description,
             price: parseFloat(pkg.price),
             originalPrice: parseFloat(pkg.original_price || pkg.price),
-            duration: pkg.duration_hours ? `${pkg.duration_hours} ${pkg.duration_hours === 1 ? 'hour' : 'hours'} total` : `${pkg.number_of_lessons} lessons`,
+            duration: pkg.duration_hours ? (() => {
+              const hours = parseFloat(pkg.duration_hours);
+              const formattedHours = hours % 1 === 0 ? hours.toFixed(0) : hours;
+              return `${formattedHours} ${hours === 1 ? 'hour' : 'hours'} total`;
+            })() : `${pkg.number_of_lessons} lessons`,
             lessons: pkg.number_of_lessons,
             icon: getIconForPackage(pkg.name),
             popular: pkg.is_popular || false,
@@ -85,19 +88,15 @@ const Packages = () => {
   const packagesWithIcons = packages.map(p => ({ ...p, IconComponent: iconMap[p.icon] || FiTruck }));
 
   const handlePurchaseClick = (packageData) => {
-    if (!isAuthenticated) {
-      toast.error('Please log in to purchase a package');
-      return;
-    }
-    
-    console.log('Opening payment modal for package:', packageData);
     setSelectedPackage(packageData);
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = (paymentIntent) => {
+  const handlePaymentSuccess = (result) => {
     toast.success('Payment successful! Your package has been purchased.');
-    // You can redirect to dashboard or show success message
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
   };
 
   const handleCloseModal = () => {
@@ -160,12 +159,8 @@ const Packages = () => {
                 <div className="package-pricing">
                   <div className="price-container">
                     <span className="current-price">${pkg.price}</span>
-                    <span className="original-price">${pkg.originalPrice}</span>
                   </div>
                   <p className="duration">{pkg.duration}</p>
-                  <div className="savings">
-                    Save ${pkg.originalPrice - pkg.price}
-                  </div>
                 </div>
 
                 <div className="package-features">
@@ -223,3 +218,4 @@ const Packages = () => {
 };
 
 export default Packages;
+
