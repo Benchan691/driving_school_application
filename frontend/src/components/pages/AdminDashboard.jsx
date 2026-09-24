@@ -3,7 +3,7 @@ import { API_BASE } from '../../utils/apiBase';
 import { motion } from 'framer-motion';
 import { FiCheckCircle, FiEdit3, FiTrash2, FiRefreshCw, FiCalendar, FiMail, FiEye, FiSave, FiDollarSign, FiXCircle, FiLayers } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
-import TodayTimetable from '../common/TodayTimetable';
+import GoogleCalendarEmbed from '../common/GoogleCalendarEmbed';
 import PaymentManagement from './PaymentManagement';
 import PackageManagement from './PackageManagement';
 import '../../styles/pages/admin.scss';
@@ -67,12 +67,6 @@ const AdminDashboard = () => {
       return matchStatus && matchQ;
     });
   }, [contacts, contactFilters]);
-
-  // Today's lesson count for badge
-  const todayLessonsCount = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return bookings.filter(b => b.date === today).length;
-  }, [bookings]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -289,8 +283,8 @@ const AdminDashboard = () => {
           <p>Manage and verify bookings</p>
         </motion.div>
 
-        <div className="admin-actions" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div className="admin-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className={`btn ${view==='bookings' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('bookings')}>Bookings</button>
             <button className={`btn ${view==='contacts' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('contacts')}>Contacts</button>
             <button className={`btn ${view==='payments' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('payments')}>
@@ -303,19 +297,7 @@ const AdminDashboard = () => {
               <FiMail /> Email Settings
             </button>
             <button className={`btn ${view==='timetable' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setView('timetable')}>
-              <FiCalendar /> Lessons Today
-              {todayLessonsCount > 0 && (
-                <span className="badge" style={{ 
-                  backgroundColor: '#ef4444', 
-                  color: 'white', 
-                  fontSize: '11px', 
-                  padding: '2px 6px', 
-                  borderRadius: '10px', 
-                  marginLeft: '6px' 
-                }}>
-                  {todayLessonsCount}
-                </span>
-              )}
+              <FiCalendar /> Google Calendar
             </button>
           </div>
           <button className="btn btn-outline" onClick={fetchAll}><FiRefreshCw /> Refresh</button>
@@ -716,10 +698,7 @@ const AdminDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <TodayTimetable
-              bookings={bookings}
-              onRefresh={fetchAll}
-            />
+            <GoogleCalendarEmbed />
           </motion.div>
         )}
 
@@ -884,5 +863,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
 

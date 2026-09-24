@@ -263,26 +263,6 @@ const PublicBooking = () => {
           </p>
         </div>
 
-        <div style={{ 
-          background: '#eff6ff', 
-          border: '1px solid #3b82f6', 
-          borderRadius: '8px', 
-          padding: '16px', 
-          marginBottom: '2rem',
-          fontSize: '14px',
-          color: '#1e40af'
-        }}>
-          ⏰ <strong>Important:</strong> All times are in Vancouver/Pacific Time (Canada).
-          <br />
-          <strong>Current Vancouver Time:</strong> {new Date().toLocaleString('en-US', { 
-            timeZone: 'America/Vancouver',
-            dateStyle: 'medium',
-            timeStyle: 'short'
-          })}
-          <br />
-          <small>Please adjust your booking time accordingly if you're in a different timezone.</small>
-        </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
           {/* Calendar */}
           <motion.div

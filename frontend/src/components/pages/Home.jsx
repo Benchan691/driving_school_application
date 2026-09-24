@@ -3,11 +3,14 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { FiUsers, FiBookOpen, FiMessageCircle, FiTag, FiHeart, FiChevronLeft, FiChevronRight, FiStar } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import homeContent from '../../content/home.json';
+import { getContactInfo } from '../../utils/schoolConfig';
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
   const dashboardPath = user?.user_type === 'admin' ? '/dashboard/admin' : '/dashboard';
+  const contactInfo = getContactInfo();
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -98,6 +101,15 @@ const Home = () => {
                 <Link to="/packages" className="btn btn-outline btn-lg" onClick={scrollToTop}>
                   {homeContent.hero.secondaryCtaText}
                 </Link>
+                <a
+                  href={contactInfo.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-whatsapp btn-lg"
+                >
+                  <FaWhatsapp />
+                  WhatsApp us
+                </a>
               </div>
               <div className="hero-highlights">
                 {homeContent.hero.highlights.map((highlight, index) => (

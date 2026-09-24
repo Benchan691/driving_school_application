@@ -74,45 +74,6 @@ All API responses follow a consistent format:
 
 ### 🔐 Authentication Endpoints
 
-#### Register User
-```http
-POST /api/auth/register
-```
-
-**Request Body:**
-```json
-{
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john.doe@example.com",
-  "password": "SecurePass123!",
-  "confirmPassword": "SecurePass123!",
-  "phone": "+1234567890",
-  "role": "student"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": 1,
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john.doe@example.com",
-      "role": "student",
-      "createdAt": "2024-01-15T10:30:00Z"
-    },
-    "tokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    }
-  }
-}
-```
-
 #### Login User
 ```http
 POST /api/auth/login
@@ -198,16 +159,6 @@ POST /api/auth/reset-password
   "password": "NewPass123!",
   "confirmPassword": "NewPass123!"
 }
-```
-
-#### Google OAuth Login
-```http
-GET /api/auth/google
-```
-
-#### Google OAuth Callback
-```http
-GET /api/auth/google/callback
 ```
 
 ### 📅 Booking Endpoints
@@ -419,18 +370,6 @@ Authorization: Bearer <access-token>
 
 ### 👥 Admin Endpoints
 
-#### Get All Users
-```http
-GET /api/admin/users
-Authorization: Bearer <admin-access-token>
-```
-
-#### Update User
-```http
-PUT /api/admin/users/:id
-Authorization: Bearer <admin-access-token>
-```
-
 #### Get All Bookings
 ```http
 GET /api/admin/bookings
@@ -454,6 +393,41 @@ Authorization: Bearer <admin-access-token>
 ```http
 GET /api/admin/payments
 Authorization: Bearer <admin-access-token>
+```
+
+#### Get Admin Email Settings
+```http
+GET /api/admin/settings/email
+Authorization: Bearer <admin-access-token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "email_user": "school@example.com",
+    "email_from": "The Truth Driving School <school@example.com>",
+    "has_password": true,
+    "source": "db",
+    "settings_key_present": true
+  }
+}
+```
+
+#### Update Admin Email Settings
+```http
+PUT /api/admin/settings/email
+Authorization: Bearer <admin-access-token>
+```
+
+**Request Body:**
+```json
+{
+  "email_user": "school@example.com",
+  "email_from": "The Truth Driving School <school@example.com>",
+  "email_pass": "app-specific-password"
+}
 ```
 
 ### 📞 Contact Endpoints

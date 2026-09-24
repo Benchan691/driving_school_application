@@ -116,6 +116,7 @@ services:
       args:
         - REACT_APP_API_BASE=${REACT_APP_API_BASE}
         - REACT_APP_STRIPE_PUBLISHABLE_KEY=${REACT_APP_STRIPE_PUBLISHABLE_KEY}
+        - REACT_APP_GOOGLE_CALENDAR_EMBED_URL=${REACT_APP_GOOGLE_CALENDAR_EMBED_URL}
     container_name: driving_school_frontend_prod
     env_file:
       - .env.production
@@ -179,4 +180,3 @@ volumes:
 networks:
   driving_school_network:
     driver: bridge
-
